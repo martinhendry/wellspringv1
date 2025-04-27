@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <meta name="description" content="WellSpring: A free, private, browser-based daily habit tracker focused on 10 wellness pillars. Track habits, mood, progress, and unlock achievements.">
+    <meta name="keywords" content="habit tracker, free habit tracker, wellness tracker, daily tracker, mood tracker, self-improvement, wellbeing, goals, achievements, mental health, personal growth, journal">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"
+            integrity="sha512-jduERlz7En1IUZR54bqzpNI64AbffZWR//KJgF71SJ8D8/liKFZ+s1RxmUmB+bhCnIfzebdZsULwOrbVB5f3nQ=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer">
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>WellSpring - Daily Wellbeing Tracker</title>
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="apple-touch-icon" href="assets/favicon.png">
+    </head>
+<body>
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <div id="welcome-modal" class="modal-overlay" aria-modal="true" role="dialog" aria-labelledby="welcome-title">
+        <div class="modal-content">
+            <button class="modal-close-btn" aria-label="Close welcome message">&times;</button>
+            <h2 id="welcome-title">Welcome to WellSpring! 🌱</h2>
+            <p>Cultivate daily habits across 10 pillars, monitor your mood, and reflect on your journey. Your data stays private, stored only in your browser.</p>
+            <p>Click 'Save Day' on the 'Daily Log' tab to record your progress. Explore the 'Help & Info' section at the bottom for more details.</p>
+            <button id="dismiss-welcome-btn">Got it!</button>
+        </div>
+    </div>
+
+    <div id="name-prompt-modal" class="modal-overlay" aria-modal="true" role="dialog" aria-labelledby="name-prompt-title">
+        <div class="modal-content">
+             <button class="modal-close-btn" aria-label="Close name prompt">&times;</button>
+            <h2 id="name-prompt-title">What should we call you?</h2>
+            <p>Personalize your experience by entering your name.</p>
+            <div class="form-group">
+                 <label for="name-input">Your Name:</label>
+                 <input type="text" id="name-input" name="userName" placeholder="Enter your name" required autocomplete="name">
+            </div>
+            <button id="save-name-btn">Save Name</button>
+        </div>
+    </div>
+
+    <div id="achievement-detail-modal" class="modal-overlay" aria-modal="true" role="dialog" aria-labelledby="achievement-modal-title">
+        <div class="modal-content achievement-modal-content">
+            <button class="modal-close-btn" id="close-achievement-modal-btn" aria-label="Close achievement details">&times;</button>
+            <div class="achievement-modal-header">
+                 <i id="achievement-modal-icon" class="fas fa-trophy" aria-hidden="true"></i>
+                 <h2 id="achievement-modal-title">Achievement Title</h2>
+            </div>
+            <p id="achievement-modal-status" class="achievement-modal-status locked">Status: Locked</p>
+            <p id="achievement-modal-desc">Description goes here.</p>
+            <div id="achievement-modal-flavor" class="achievement-modal-flavor">
+                </div>
+            <p id="achievement-modal-date" class="achievement-modal-date">Unlocked on: Date</p>
+        </div>
+    </div>
+
+    <div id="onboarding-modal" class="modal-overlay" aria-modal="true" role="dialog" aria-labelledby="onboarding-title">
+        <div class="modal-content onboarding-content">
+            <div class="onboarding-step active-step" id="onboarding-step-1">
+                <h2 id="onboarding-title">Welcome to WellSpring!</h2>
+                <p>Let's quickly set up your experience.</p>
+                 <p><small>This app helps you track daily wellbeing habits across 10 pillars. All data stays private on your device.</small></p>
+                <div class="step-navigation">
+                    <button id="onboarding-next-1" class="onboarding-btn next">Next &rarr;</button>
+                </div>
+            </div>
+            <div class="onboarding-step" id="onboarding-step-2" style="display: none;">
+                <h2>What should we call you?</h2>
+                <p>Personalize messages and achievements.</p>
+                <div class="form-group">
+                    <label for="onboarding-name-input">Your Name:</label>
+                    <input type="text" id="onboarding-name-input" name="onboardingUserName" placeholder="Enter your name" required autocomplete="name">
+                </div>
+                <div class="step-navigation">
+                    <button id="onboarding-prev-2" class="onboarding-btn prev">&larr; Previous</button>
+                    <button id="onboarding-next-2" class="onboarding-btn next">Next &rarr;</button>
+                </div>
+            </div>
+            <div class="onboarding-step" id="onboarding-step-3" style="display: none;">
+                <h2>Choose Your Experience</h2>
+                <p>Select how you'd like to use WellSpring:</p>
+                <fieldset class="form-group">
+                    <legend>Select Mode:</legend>
+                    <div>
+                        <input type="radio" id="mode-full" name="onboardingMode" value="full" checked>
+                        <label for="mode-full">
+                            <strong>Full Mode:</strong> Access all features including habit planning, analytics, achievements, and detailed tracking.
+                        </label>
+                    </div>
+                    <div>
+                        <input type="radio" id="mode-simple" name="onboardingMode" value="simple">
+                        <label for="mode-simple">
+                            <strong>Simple Mode:</strong> A streamlined view focused only on daily pillar and mood logging. Hides advanced features like the planner and analytics. Good if you want to keep it simple to begin with!
+                        </label>
+                    </div>
+                </fieldset>
+                <p><small>You can change this later in settings.</small></p>
+                <div class="step-navigation">
+                    <button id="onboarding-prev-3" class="onboarding-btn prev">&larr; Previous</button>
+                    <button id="onboarding-next-3" class="onboarding-btn next">Next &rarr;</button>
+                </div>
+            </div>
+            <div class="onboarding-step" id="onboarding-step-4" style="display: none;">
+                <h2>Simple Mode: How many pillars?</h2>
+                <p>Choose the number of pillars you want to focus on daily.</p>
+                <fieldset class="form-group">
+                    <legend>Number of Pillars:</legend>
+                    <div>
+                        <input type="radio" id="simple-count-3" name="simpleModePillarCount" value="3" checked>
+                        <label for="simple-count-3">I want to track 3 Pillars</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="simple-count-5" name="simpleModePillarCount" value="5">
+                        <label for="simple-count-5">I want to track 5 Pillars</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="simple-count-7" name="simpleModePillarCount" value="7">
+                        <label for="simple-count-7">I want to track 7 Pillars</label>
+                    </div>
+                </fieldset>
+                <div class="step-navigation">
+                    <button id="onboarding-prev-4" class="onboarding-btn prev">&larr; Previous</button>
+                    <button id="onboarding-next-4" class="onboarding-btn next">Next &rarr;</button>
+                </div>
+            </div>
+            <div class="onboarding-step" id="onboarding-step-5" style="display: none;">
+                <h2>Simple Mode: Select Your Pillars</h2>
+                <p id="pillar-selection-instruction">Select X pillars to track:</p>
+                <div id="onboarding-pillar-list" class="pillar-checkbox-grid">
+                    <p>Loading pillars...</p>
+                </div>
+                <p id="pillar-selection-counter" class="pillar-selection-info">Selected: 0 / X</p>
+                <div class="step-navigation">
+                    <button id="onboarding-prev-5" class="onboarding-btn prev">&larr; Previous</button>
+                    <button id="onboarding-finish" class="onboarding-btn save">Save Settings & Start &rarr;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay" aria-modal="true" role="dialog" aria-labelledby="settings-title">
+        <div class="modal-content settings-modal-content">
+            <button class="modal-close-btn" id="close-settings-modal-btn" aria-label="Close settings">&times;</button>
+            <h2 id="settings-title">⚙️ Settings</h2>
+
+            <form id="settings-form">
+                <div class="form-group">
+                    <label for="settings-name-input">Your Name:</label>
+                    <input type="text" id="settings-name-input" name="settingsUserName" placeholder="Enter your name" autocomplete="name">
+                    <small>Used for personalized messages and achievements.</small>
+                </div>
+
+                <fieldset class="form-group">
+                    <legend>Application Mode</legend>
+                    <div>
+                        <input type="radio" id="settings-mode-full" name="settingsMode" value="full">
+                        <label for="settings-mode-full">
+                            <strong>Full Mode:</strong> All features enabled (Planner, Analytics, Achievements).
+                        </label>
+                    </div>
+                    <div>
+                        <input type="radio" id="settings-mode-simple" name="settingsMode" value="simple">
+                        <label for="settings-mode-simple">
+                            <strong>Simple Mode:</strong> Streamlined daily logging (hides Planner, Analytics, Achievements).
+                        </label>
+                    </div>
+                </fieldset>
+
+                <div id="settings-simple-options" class="form-group" style="display: none; border-top: 1px dashed var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+                    <fieldset id="settings-simple-count-fieldset">
+                        <legend>Simple Mode - Pillar Count</legend>
+                        <div>
+                            <input type="radio" id="settings-simple-count-3" name="settingsSimpleModePillarCount" value="3">
+                            <label for="settings-simple-count-3">Track 3 Pillars</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="settings-simple-count-5" name="settingsSimpleModePillarCount" value="5">
+                            <label for="settings-simple-count-5">Track 5 Pillars</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="settings-simple-count-7" name="settingsSimpleModePillarCount" value="7">
+                            <label for="settings-simple-count-7">Track 7 Pillars</label>
+                        </div>
+                    </fieldset>
+
+                    <button type="button" id="settings-change-pillars-btn" class="change-button" style="display: none; margin-top: 0.5rem; margin-bottom: 1rem;">Change Selected Pillars</button>
+
+                    <div id="settings-pillar-checklist-container" style="margin-top: 1rem; display: block;">
+                        <p id="settings-pillar-instruction" style="font-weight: 500; margin-bottom: 0.5rem;">Select X pillars to track:</p>
+                        <div id="settings-pillar-checklist" class="pillar-checkbox-grid" style="max-height: 25vh;">
+                            <p>Loading pillars...</p>
+                        </div>
+                        <p id="settings-pillar-counter" class="pillar-selection-info">Selected: 0 / X</p>
+                    </div>
+                </div>
+
+                <div id="settings-planner-toggle-container" class="form-group" style="display: none; border-top: 1px dashed var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+                    <label for="settings-planner-toggle" class="checkbox-label">
+                        <input type="checkbox" id="settings-planner-toggle" name="settingsShowPlanner">
+                        Show Habit Planner Section
+                    </label>
+                    <small>Toggle the visibility of the Habit Planner section on the Daily Log tab (only applies in Full Mode).</small>
+                </div>
+
+                <button type="submit" id="save-settings-btn" class="save-button" style="margin-top: 1.5rem;">Save Settings</button>
+            </form>
+
+            <div class="settings-data-management" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <h4>Data Management</h4>
+                <p><small>Download a backup or restore from a previous backup file (.json). Restoring overwrites current data.</small></p>
+                <div class="data-actions">
+                    <button class="data-btn" id="settings-export-data-btn">⬇️ Download Backup</button>
+                    <button class="data-btn" id="settings-import-data-trigger-btn">⬆️ Restore Backup</button>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="main-container">
+
+        <header class="app-header">
+            <div class="title-slogan-wrapper">
+                <div class="logo-title-line">
+                    <img src="assets/wellspringlogo.png" alt="WellSpring Logo" class="header-logo">
+                    <h1>WellSpring</h1>
+                </div>
+                <p class="slogan">Cultivating Daily Wellbeing</p>
+            </div>
+            <div class="header-controls">
+                <button id="settings-btn" class="icon-toggle settings-toggle" aria-label="Open settings"><i class="fas fa-cog"></i></button>
+                <button id="audio-toggle" class="icon-toggle audio-toggle" aria-label="Toggle sound" aria-pressed="true"><i class="fas fa-volume-up"></i></button>
+                <button id="theme-toggle" class="icon-toggle theme-toggle" aria-label="Toggle theme">🌙</button>
+            </div>
+        </header>
+
+        <div class="date-navigation">
+            <button class="nav-arrow" id="prev-day-btn" aria-label="Previous day">←</button>
+            <div class="date-display">
+                <span class="date-text" id="formatted-date" role="button" aria-label="Select date">Date</span>
+                <input type="date" id="hidden-date-input" aria-hidden="true" />
+            </div>
+            <button class="nav-arrow" id="next-day-btn" aria-label="Next day">→</button>
+        </div>
+
+        <div id="prestige-stars" class="prestige-stars-display" aria-label="Prestige Cycles" style="display: none;">
+            </div>
+
+        <div id="personalized-welcome" class="welcome-message" style="display: none; margin-bottom: 1rem;">
+             Hello, <span id="user-name-placeholder">[User Name]</span>!
+        </div>
+
+        <div class="level-container">
+            <div id="level-info" class="level-info">Level 1</div>
+            <div class="progress-bar level-progress-bar" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="progress-fill" id="level-progress-fill" style="width: 0%;"></div>
+                <span class="progress-bar-text" id="level-progress-text">0%</span>
+            </div>
+        </div>
+
+        <div id="suggested-achievement-display" class="suggested-achievement" style="display: none;">
+             </div>
+
+        <nav class="nav-tabs" role="tablist">
+            <button class="tab-button active" data-tab="daily" role="tab" aria-selected="true" aria-controls="daily">Daily log</button>
+            <button class="tab-button" data-tab="calendar" role="tab" aria-selected="false" aria-controls="calendar">Calendar & Trends</button>
+            <button class="tab-button" data-tab="journey" role="tab" aria-selected="false" aria-controls="journey">Your Journey</button>
+            <button class="tab-button" data-tab="achievements" role="tab" aria-selected="false" aria-controls="achievements">Achievements</button>
+        </nav>
+
+        <main>
+            <section id="daily" class="tab-content active" role="tabpanel" aria-labelledby="daily-tab">
+                 <h2>Daily Log for <span id="daily-log-date">Loading...</span></h2>
+                 <div class="pillar-grid" id="pillar-inputs"><p>Loading pillars...</p></div>
+
+                 <div class="collapsible-section habit-planner-section">
+                    <button id="habit-planner-toggle" class="collapsible-trigger" aria-expanded="false" aria-controls="habit-planner-content">
+                        <span>Plan Your Habits</span> <span class="toggle-arrow">▼</span>
+                    </button>
+                    <div id="habit-planner-content" class="collapsible-content" hidden>
+                        <form id="habit-plan-form" style="margin-top: 1rem;">
+                             <input type="hidden" id="habit-plan-id" name="planId">
+                             <div class="form-group">
+                                  <label for="habit-plan-pillar-select">Primary Pillar:</label>
+                                  <select id="habit-plan-pillar-select" name="pillarId" required>
+                                      <option value="" disabled selected>-- Select a Pillar --</option>
+                                      </select>
+                                  <small>Which main pillar does this activity target?</small>
+                              </div>
+                              <div class="form-group">
+                                  <fieldset>
+                                      <legend>Planning method:</legend>
+                                      <div class="plan-type-option">
+                                          <input type="radio" id="plan-type-intention" name="planType" value="intention" checked>
+                                          <label for="plan-type-intention">Triggered Plan (If/When...)</label>
+                                          <div class="tooltip-container inline-tooltip">
+                                               <button type="button" class="info-icon small-info-icon" aria-describedby="tooltip-intention" aria-label="Info about Triggered Plans">?</button>
+                                               <span class="tooltip-text right-tooltip" role="tooltip" id="tooltip-intention">
+                                                   Plan a specific action triggered by a cue. (Formal name: Implementation Intention). Example: 'IF I finish lunch, THEN I will go for a 10-minute walk.'
+                                               </span>
+                                          </div>
+                                      </div>
+                                      <div class="plan-type-option">
+                                          <input type="radio" id="plan-type-stacking" name="planType" value="stacking">
+                                          <label for="plan-type-stacking">Stacked Plan (After/Before...)</label>
+                                           <div class="tooltip-container inline-tooltip">
+                                               <button type="button" class="info-icon small-info-icon" aria-describedby="tooltip-stacking" aria-label="Info about Stacking Plans">?</button>
+                                               <span class="tooltip-text right-tooltip" role="tooltip" id="tooltip-stacking">
+                                                   Link a new habit to an existing one. (Formal name: Habit Stacking). Example: 'AFTER I brush my teeth, THEN I will meditate for 2 minutes.'
+                                               </span>
+                                          </div>
+                                      </div>
+                                  </fieldset>
+                              </div>
+                              <div class="form-group" id="habit-plan-secondary-pillar-group" style="display: none; margin-top: 1rem;">
+                                    <label for="habit-plan-secondary-pillar-select">Optional Secondary Pillar:</label>
+                                    <select id="habit-plan-secondary-pillar-select" name="secondaryPillarId">
+                                        <option value="">-- None --</option>
+                                        </select>
+                                    <small>Optionally link a second pillar to this stacked habit (for display only).</small>
+                              </div>
+                              <div class="form-group">
+                                 <label for="habit-plan-activity">Activity:</label>
+                                 <input type="text" id="habit-plan-activity" name="activityDescription" placeholder="e.g. I will meditate for 5 minutes..." required>
+                                 <small>Write what you plan to do. Remember: you decide what each pillar means.</small>
+                             </div>
+                             <div id="habit-plan-cue-group" class="form-group">
+                                 <label for="habit-plan-cue">When/If... (Your Cue):</label>
+                                 <input type="text" id="habit-plan-cue" name="cue" placeholder="e.g. ...when my morning alarm rings.">
+                                 <small>Specify the trigger for your intended habit.</small>
+                             </div>
+                             <div id="habit-plan-anchor-group" class="form-group" style="display: none;">
+                                 <label for="habit-plan-anchor">After/Before... (Existing Habit):</label>
+                                 <input type="text" id="habit-plan-anchor" name="anchorHabit" placeholder="e.g. ...after I brush my teeth.">
+                                  <small>Link your new habit to one you already do.</small>
+                             </div>
+                             <button type="submit" id="save-habit-plan-btn" class="save-button">Save Plan</button>
+                             <button type="button" id="delete-habit-plan-btn" style="display: none;" class="save-button">Delete Plan</button>
+                        </form>
+                        <div id="saved-plans-display" style="margin-top: 1.5rem;">
+                             <h4>Your Plans:</h4>
+                             <p><small>Saved plans will appear here.</small></p>
+                        </div>
+                     </div>
+                 </div>
+
+                 <div class="mood-tracker">
+                     <h3>Daily Mood</h3>
+                     <div class="mood-options" role="radiogroup" aria-label="Select daily mood">
+                         <div class="mood-option" data-level="1" role="radio" aria-label="Mood level 1: Worried" aria-checked="false">😟</div>
+                         <div class="mood-option" data-level="2" role="radio" aria-label="Mood level 2: Confused" aria-checked="false">😕</div>
+                         <div class="mood-option" data-level="3" role="radio" aria-label="Mood level 3: Neutral" aria-checked="false">🫤</div>
+                         <div class="mood-option" data-level="4" role="radio" aria-label="Mood level 4: Happy" aria-checked="false">🙂</div>
+                         <div class="mood-option" data-level="5" role="radio" aria-label="Mood level 5: Excited" aria-checked="false">😁</div>
+                     </div>
+                 </div>
+
+                 <div class="progress-container">
+                      <div class="progress-bar" role="progressbar" aria-label="Daily progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                          <div class="progress-fill" id="xp-progress" style="width: 0%"></div>
+                          <span class="progress-bar-text" id="progress-bar-text">0/10</span>
+                      </div>
+                      <div class="progress-info" aria-live="polite">
+                           Total XP: <span id="total-xp">0</span> • Streak: <span id="current-streak">0</span> Days
+                      </div>
+                 </div>
+
+                 <button class="save-button" id="lock-button">💾 Save Day</button>
+                 <button class="save-button" id="unlock-button" style="display: none;">🔓 Unlock Day</button>
+            </section>
+
+            <section id="calendar" class="tab-content" role="tabpanel" aria-labelledby="calendar-tab">
+                 <h2>Calendar & Trends</h2>
+                 <div class="month-nav">
+                     <button id="prev-month-btn" aria-label="Previous month">←</button>
+                     <h3 id="current-month">Loading...</h3>
+                     <button id="next-month-btn" aria-label="Next month">→</button>
+                 </div>
+                 <div id="calendar-view">
+                     <div class="calendar-header" aria-hidden="true">
+                         <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                     </div>
+                     <div class="calendar" id="calendar-grid" aria-label="Monthly calendar view">
+                         <p>Loading calendar...</p>
+                     </div>
+                     <p id="calendar-empty-state" style="display: none;">No data logged for this month yet.</p>
+                 </div>
+                 <button id="view-analytics-btn" aria-pressed="false">View Analytics</button>
+                 <div id="analytics-container" style="display: none;">
+                     <h3>Analytics Overview</h3>
+                     <div id="welcome-user-analytics" class="welcome-message" style="display: none;">
+                         Welcome back, <span id="user-name-placeholder-analytics">[User Name]</span>!
+                     </div>
+                     <nav id="analytics-toggles" role="tablist" aria-label="Select analytics view">
+                         <button class="analytics-toggle active" data-view="stats" role="tab" aria-selected="true" aria-controls="stats-dashboard-view" id="stats-tab">Dashboard</button>
+                         <button class="analytics-toggle" data-view="polygon" role="tab" aria-selected="false" aria-controls="polygon-chart-container" id="polygon-tab">Habit Balance</button>
+                         </nav>
+                     <div id="stats-dashboard-view" style="display: block;" role="tabpanel" aria-labelledby="stats-tab">
+                         <div id="stats-dashboard" class="stats-grid" role="region" aria-labelledby="stats-title">
+                             <h4 id="stats-title" class="sr-only">Statistics Dashboard</h4>
+                             <div class="stat-card"><span class="stat-label"><i class="fas fa-calendar-alt stat-icon"></i> Start Date</span><span class="stat-value" id="stat-start-date">---</span></div>
+                             <div class="stat-card"><span class="stat-label"><i class="fas fa-calendar-check stat-icon"></i> Days Logged</span><span class="stat-value" id="stat-days-logged">---</span></div>
+                             <div class="stat-card"><span class="stat-label"><i class="fas fa-fire stat-icon"></i> Current Streak</span><span class="stat-value" id="stat-current-streak">--- days</span></div>
+                             <div class="stat-card"><span class="stat-label"><i class="fas fa-check-square stat-icon"></i> Pillar Entries</span><span class="stat-value" id="stat-pillar-entries">---</span></div>
+                             <div class="stat-card"><span class="stat-label"><i class="fas fa-pencil-alt stat-icon"></i> Notes Added</span><span class="stat-value" id="stat-notes-added">---</span></div>
+                             <div class="stat-card">
+                                 <span class="stat-label"><i class="fas fa-trophy stat-icon"></i> Achievements</span>
+                                 <span class="stat-value" id="stat-achievements-unlocked">--- / ---</span>
+                             </div>
+                             <div class="stat-card"><span class="stat-label"><i class="fas fa-layer-group stat-icon"></i> Current Level</span><span class="stat-value" id="stat-current-level">---</span></div>
+                             <div class="stat-card"><span class="stat-label"><i class="fas fa-recycle stat-icon"></i> Cycle</span><span class="stat-value" id="stat-cycle-rank">---</span></div>
+                         </div>
+                     </div>
+                     <div id="polygon-chart-container" style="display: none;" role="tabpanel" aria-labelledby="polygon-tab">
+                         <p id="polygon-chart-empty-state" style="display: none;">Log some habits to see your balance here.</p>
+                     </div>
+                     <p id="analytics-description" style="margin-top: 1rem; text-align: center;"></p>
+                 </div>
+            </section>
+
+            <section id="journey" class="tab-content" role="tabpanel" aria-labelledby="journey-tab">
+                 <div class="add-note-form">
+                     <h3 id="add-note-header">Add a Timeline Note</h3>
+                     <textarea id="new-note-textarea" placeholder="Write your reflection or note here..." aria-label="New timeline note"></textarea>
+                     <button id="add-note-btn">Add Note to Journey</button>
+                 </div>
+                 <h2>Journey Timeline</h2>
+                 <div class="timeline-controls">
+                     <label for="timeline-filter">Filter By:</label>
+                     <select id="timeline-filter" aria-label="Filter timeline entries">
+                         <option value="all">All Entries</option>
+                         <option value="note">Notes Only</option>
+                         <option value="achievement">Achievements Only</option>
+                         <option value="prestige">Cycle Only</option>
+                     </select>
+                     <label for="timeline-sort">Sort By:</label>
+                     <select id="timeline-sort" aria-label="Sort timeline entries">
+                         <option value="newest">Newest First</option>
+                         <option value="oldest">Oldest First</option>
+                     </select>
+                 </div>
+                 <div id="timeline-entries">
+                     <div class="timeline-entry"><p>Your notes and achievements will appear here.</p></div>
+                 </div>
+                 <button id="prestige-button" class="save-button" style="display: none;">🔄 Start Next Cycle</button>
+            </section>
+
+            <section id="achievements" class="tab-content" role="tabpanel" aria-labelledby="achievements-tab">
+                 <h2>Achievements Board</h2>
+                 <p class="achievements-intro">Click an achievement to see details.</p>
+                 <p id="achievements-counter" class="achievements-counter" aria-live="polite">Achievements Unlocked: ... / ...</p>
+                 <div id="achievement-board-grid">
+                    <p>Loading achievements...</p>
+                 </div>
+             </section>
+        </main>
+
+        <aside class="global-guide">
+             <button class="guide-toggle" id="guide-toggle-btn" aria-expanded="false" aria-controls="guide-content-area">
+                 <span>Click here for Help & Info</span> <span class="toggle-arrow">▼</span>
+             </button>
+             <div class="guide-content" id="guide-content-area" hidden>
+                 <div class="guide-content-inner">
+                     <section class="guide-section">
+                         <h3>🧩 Understanding the Pillars</h3>
+                         <p>WellSpring uses 10 pillars for holistic wellbeing. Define what each means for *you*:</p>
+                         <ul>
+                            <li><strong>🧘‍♂️ Stillness:</strong> Meditation, quiet reflection, mindful breathing, prayer, or simply being present without distraction.</li>
+                            <li><strong>📋 Tidy:</strong> Organizing physical/digital space, cleaning, clearing clutter, planning your day or week.</li>
+                            <li><strong>🤝 Connect:</strong> Meaningful interaction (in person, call, message), quality time with loved ones, community involvement.</li>
+                            <li><strong>⛰️ Progress:</strong> Working towards personal/professional goals, learning a skill, problem-solving, completing a task.</li>
+                            <li><strong>📚 Nourish:</strong> Reading, listening to podcasts, learning something new, engaging with enriching content or ideas, mindful eating.</li>
+                            <li><strong>🏃 Move:</strong> Exercise, walking, stretching, dancing, gardening, any physical activity that feels good.</li>
+                            <li><strong>🎨 Create:</strong> Writing, drawing, music, coding, crafting, cooking, expressing creativity in any form.</li>
+                            <li><strong>📵 Unplug:</strong> Disconnecting from screens/digital noise, spending time in nature, being present offline.</li>
+                            <li><strong>📔 Reflect:</strong> Journaling, reviewing the day, considering feelings/actions, planning based on insights.</li>
+                            <li><strong>😌 Enjoy:</strong> Mindfully savoring positive moments, practicing gratitude, engaging in hobbies, relaxation.</li>
+                         </ul>
+                     </section>
+                     <section class="guide-section">
+                         <h3>⚙️ How WellSpring Works</h3>
+                         <p>Navigate using the tabs at the top. Your core interactions happen on the Daily Log tab.</p>
+                         <ul>
+                            <li><strong>Daily Log:</strong> Select pillars you engaged with and your mood. Use arrows or click the date to change days. (Both Modes)</li>
+                            <li><strong>Save Day:</strong> Locks the day's entry, calculates XP/streak. Requires at least one pillar or mood logged. (Both Modes)</li>
+                            <li><strong>XP & Levels:</strong> Earn XP for saved days (more for pillars/mood logged). Level up for a sense of progression. Reach Level 100 to Prestige! (Both Modes)</li>
+                            <li><strong>Calendar:</strong> View past logs visually. Click days to jump to their log. (Both Modes)</li>
+                            <li><strong>Analytics:</strong> See overall stats (days logged, streak, etc.) and visualize pillar balance. (Full Mode Only)</li>
+                            <li><strong>Journey:</strong> Add notes/reflections. Achievements and Cycle completions appear automatically. Filter/sort your history. (Full Mode Only)</li>
+                            <li><strong>Achievements:</strong> Unlock milestones for streaks, XP, pillar counts, etc. (Full Mode Only)</li>
+                            <li><strong>Habit Planner:</strong> Create specific 'if/then' or 'habit stacking' plans to guide your actions. (Full Mode, Toggleable in Settings, currently in Beta)</li>
+                            <li><strong>Simple/Full Mode:</strong> Choose your preferred experience in Settings. Simple Mode hides Planner, Analytics, and Achievements tabs. (Both Modes)</li>
+                         </ul>
+                     </section>
+                     <section class="guide-section">
+                        <h3>✨ Pillar Synergy Tips</h3>
+                        <p>Combining pillars can enhance their benefits. Consider these synergies:</p>
+                        <ul>
+                            <li><strong>🏃 Move + 😌 Enjoy:</strong> Go for a mindful walk, focusing on your surroundings and appreciating the moment.</li>
+                            <li><strong>🧘‍♂️ Stillness + 📔 Reflect:</strong> Follow a meditation session with journaling to capture insights.</li>
+                            <li><strong>📋 Tidy + ⛰️ Progress:</strong> Clear your workspace before starting a focused work session on your goals.</li>
+                            <li><strong>🤝 Connect + 😌 Enjoy:</strong> Be fully present and savor the time spent with loved ones.</li>
+                            <li><strong>📚 Nourish + 🎨 Create:</strong> Use new knowledge or inspiration from reading/learning to fuel a creative project.</li>
+                            <li><strong>📵 Unplug + 🤝 Connect:</strong> Put devices away during conversations for deeper connection.</li>
+                        </ul>
+                        <p>Experiment to find combinations that work best for your wellbeing!</p>
+                     </section>
+                     <section class="guide-section">
+                          <h3>🔒 Your Data</h3>
+                          <p>Your data is stored locally in your browser's storage (LocalStorage). It is **not** sent to any server. Use the buttons below to download a backup file (JSON format) or restore from a previous backup. **Warning:** Restoring will overwrite current data.</p>
+                          <p><strong>Note: your data is saved to a certain browser, so you'll only be able to access your saved data across desktop and mobile using that specific browser.</strong></p>
+                          <div class="data-actions">
+                              <button class="data-btn" id="export-data-btn">⬇️ Download Backup</button>
+                              <button class="data-btn" id="import-data-trigger-btn">⬆️ Restore Backup</button>
+                              <input type="file" id="file-input" accept=".json" style="display:none" aria-hidden="true" />
+                          </div>
+                     </section>
+                     <section class="guide-section">
+                        <h3>💖 Support WellSpring</h3>
+                         <p>WellSpring is developed and maintained with care, offered completely free for everyone. Your privacy is respected - all data stays on your device.</p>
+                         <p>If you find this app helpful and wish to support its continued development, you can "pay what you feel" it's worth. Contributions help cover development time and future improvements.</p>
+                         <div class="data-actions">
+                             <a href="https://ko-fi.com/martindouglashendry" target="_blank" rel="noopener noreferrer" class="data-btn support-btn" style="background-color: #FF5E5B; color: white;">☕ Buy Me a Coffee (Ko-fi)</a>
+                         </div>
+                         <p style="margin-top: 10px; font-size: var(--font-size-xsmall); opacity: 0.8;">Thank you for considering supporting WellSpring!</p>
+                     </section>
+                     <section class="guide-section">
+                         <h3>💻 About</h3>
+                          <p>WellSpring 🌱: Cultivating Daily Wellbeing. Version 2.0 [April 25, 2025]</p>
+                          <p>Designed by Dr Martin Douglas Hendry.</p>
+                          <p>A simple, private tool to help you build awareness and consistency in your wellbeing journey.</p>
+                     </section>
+                 </div>
+             </div>
+         </aside>
+
+    </div> <script type="module" src="app.js"></script>
+
+</body>
+</html>
