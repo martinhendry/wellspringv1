@@ -1,0 +1,2924 @@
+/* style.css - WellSpring Application Styles */
+
+/*==============================
+  Root Variables & Themes
+==============================*/
+:root {
+  /* Color Palette (Light Theme - Default) */
+  --primary: #2c3e50;       /* Dark Blue-Gray (Headings, Borders) */
+  --primary-light: #34495e; /* Slightly Lighter Blue-Gray */
+  --secondary: #27ae60;     /* Green (Success, Positive Actions) */
+  --accent: #e74c3c;       /* Red (Alerts, Delete) */
+  --background: #f5f6fa;   /* Light Gray (Page Background) */
+  --card-bg: white;        /* Card/Modal Background */
+  --text: /* style.css - WellSpring Application Styles (Refactored v1) */
+
+/*==============================
+  Root Variables & Themes
+==============================*/
+:root {
+  /* Color Palette (Light Theme - Default) */
+  --primary: #2c3e50;       /* Dark Blue-Gray (Headings, Borders, Key Actions) */
+  --primary-light: #34495e; /* Slightly Lighter Blue-Gray (Hover states) */
+  --secondary: #27ae60;     /* Green (Success, Positive Actions, Progress) */
+  --accent: #e74c3c;       /* Red (Alerts, Delete, Negative Feedback) */
+  --background: #f5f6fa;   /* Very Light Gray (Page Background) */
+  --card-bg: white;        /* Card/Modal Background */
+  --text: #2d3436;         /* Dark Gray (Main Text) */
+  --text-muted: #718093;   /* Medium Gray (Subtle Text, Labels, Placeholders) */
+  --border-color: #dfe6e9; /* Light Gray (Borders, Dividers) */
+  --button-bg: #6ab4de;     /* Light Blue (Default Buttons - Consider aligning with primary/secondary) */
+  --button-text: var(--text); /* Text on default buttons */
+  --button-hover-bg: var(--primary); /* Hover for default buttons */
+  --button-hover-text: white; /* Text on hover for default buttons */
+  --saved-color: #f1c40f;   /* Yellow (Saved Day Indicator, Achievement Highlights) */
+  --grid-color: #c8d6e5;    /* Polygon Chart Grid Lines */
+  --mood-bg: rgba(255, 255, 255, 0.9); /* Mood Selector Background */
+  --guide-bg: #f8f9fa;      /* Help/Guide Section Background */
+  --achievement-bg: #fffbe6; /* Light Yellow (Achievement Cards) */
+  --achievement-border: #ffeba7; /* Border for achievement cards */
+  --collapsible-bg: color-mix(in srgb, var(--card-bg) 95%, var(--background)); /* Slightly off-white */
+  --tooltip-bg: #2c3e50;    /* Dark Tooltip Background */
+  --tooltip-text: white;    /* Light Tooltip Text */
+  --focus-ring-color: #3498db; /* Blue Focus Outline */
+  --modal-overlay-bg: rgba(0, 0, 0, 0.6); /* Modal Background Dim */
+  --toast-success-bg: var(--secondary);
+  --toast-error-bg: var(--accent);
+  --toast-info-bg: #3498db; /* Standard Blue */
+
+  /* Transitions */
+  --transition-duration: 0.3s; /* Standard duration */
+  --transition-duration-fast: 0.15s; /* Faster for quick feedback (hovers) */
+  --transition-duration-long: 0.6s; /* Slower for progress bars, fades */
+  --transition-timing-function: ease; /* Default timing */
+  --transition-timing-function-smooth: cubic-bezier(0.4, 0, 0.2, 1); /* Smoother curve */
+  --tooltip-transition: opacity var(--transition-duration-fast) ease-in-out, visibility var(--transition-duration-fast) ease-in-out;
+  --collapsible-transition: max-height 0.4s ease-out, padding 0.4s ease-out, opacity 0.4s ease-out;
+
+  /* Font Sizes (Responsive) - Using clamp for fluid typography */
+  --font-size-base: clamp(1rem, 1.5vw + 0.5rem, 1.1rem); /* Approx 16px-17.6px */
+  --font-size-h1: clamp(1.8rem, 5vw, 2.4rem); /* Approx 28.8px-38.4px */
+  --font-size-h2: clamp(1.4rem, 4vw, 1.8rem); /* Approx 22.4px-28.8px */
+  --font-size-h3: clamp(1.15rem, 3.5vw, 1.4rem); /* Approx 18.4px-22.4px */
+  --font-size-small: clamp(0.85rem, 1vw + 0.5rem, 0.95rem); /* Approx 13.6px-15.2px */
+  --font-size-xsmall: clamp(0.75rem, 0.8vw + 0.4rem, 0.85rem); /* Approx 12px-13.6px */
+
+  /* Spacing (Consistent rhythm) */
+  --space-xs: clamp(4px, 1vw, 6px);
+  --space-sm: clamp(8px, 1.5vw, 12px);
+  --space-md: clamp(16px, 3vw, 24px);
+  --space-lg: clamp(24px, 5vw, 36px);
+  --space-xl: clamp(32px, 7vw, 48px);
+
+  /* Borders & Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-full: 50%;
+  --border-width: 1px;
+  --border-width-lg: 2px;
+
+  /* Shadows (Subtle depth) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-inset: inset 0 1px 3px rgba(0,0,0,0.15);
+
+  /* Chart Specific */
+  --chart-label-size: 9px;
+  --chart-tooltip-size: 10px;
+  --chart-data-point-radius: 5px;
+  --chart-data-point-hover-radius: 6px;
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --primary: #3498db;       /* Bright Blue */
+  --primary-light: #5dade2;
+  --secondary: #2ecc71;     /* Bright Green */
+  --accent: #e74c3c;       /* Red (Stays the same) */
+  --background: #2c3e50;   /* Dark Blue-Gray */
+  --card-bg: #34495e;      /* Darker Blue-Gray */
+  --text: #ecf0f1;         /* Light Gray */
+  --text-muted: #95a5a6;   /* Lighter Muted Gray */
+  --border-color: #46627f; /* Muted Blue */
+  --button-bg: #5dade2;     /* Slightly Brighter Blue */
+  --button-text: #2c3e50;   /* Dark text on light blue button */
+  --button-hover-bg: var(--primary);
+  --button-hover-text: white;
+  --saved-color: #f39c12;   /* Orange */
+  --grid-color: #576574;    /* Darker Grid Lines */
+  --mood-bg: rgba(0, 0, 0, 0.2);
+  --guide-bg: #2c3e50;
+  --achievement-bg: #4a4a2a; /* Dark Yellow/Brown */
+  --achievement-border: #7a7a4a;
+  --collapsible-bg: color-mix(in srgb, var(--card-bg) 95%, var(--background));
+  --tooltip-bg: #ecf0f1;    /* Light Tooltip Background */
+  --tooltip-text: #2c3e50;  /* Dark Tooltip Text */
+  --focus-ring-color: #5dade2;
+  --modal-overlay-bg: rgba(0, 0, 0, 0.7);
+  /* Toast colors remain the same */
+}
+
+/*==============================
+  Global Styles & Accessibility
+==============================*/
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  height: 100%; /* Ensure html takes full height */
+}
+
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  transition: background-color var(--transition-duration) var(--transition-timing-function),
+              color var(--transition-duration) var(--transition-timing-function);
+  line-height: 1.6;
+  font-size: var(--font-size-base);
+  min-height: 100%; /* Ensure body takes at least full height */
+  display: flex; /* Use flexbox to manage layout */
+  flex-direction: column; /* Stack children vertically */
+}
+
+/* Main container for centering content */
+.container {
+  position: relative; /* Needed for absolute positioning of children like modals */
+  width: 100%;
+  max-width: 850px; /* Max width for content */
+  margin: 0 auto; /* Center horizontally */
+  padding: var(--space-md) clamp(10px, 3vw, 20px); /* Use spacing variables */
+  padding-bottom: 100px; /* Extra bottom padding for fixed guide */
+  flex-grow: 1; /* Allow container to grow and take available space */
+}
+
+/* Main content area within the container */
+main {
+  position: relative; /* Needed for absolute positioning of tab children */
+  min-height: 400px; /* Give main some minimum height */
+  flex-grow: 1; /* Allow main content to fill space */
+}
+
+/* Accessibility: Visible focus states */
+*:focus-visible {
+  outline: var(--border-width-lg) solid var(--focus-ring-color);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus-ring-color) 30%, transparent); /* Softer focus ring */
+  border-radius: var(--border-radius-sm);
+}
+/* Hide default focus outline when not using keyboard navigation */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Base button styling */
+button, .button-like {
+  cursor: pointer;
+  transition: background-color var(--transition-duration-fast) var(--transition-timing-function),
+              color var(--transition-duration-fast) var(--transition-timing-function),
+              opacity var(--transition-duration-fast) var(--transition-timing-function),
+              transform var(--transition-duration-fast) var(--transition-timing-function),
+              box-shadow var(--transition-duration-fast) var(--transition-timing-function);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  font-size: var(--font-size-small);
+  font-weight: 600; /* Slightly bolder buttons */
+  text-align: center;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1.4;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+}
+button:hover, .button-like:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+button:active, .button-like:active {
+  transform: translateY(0px);
+  box-shadow: var(--shadow-inset);
+  opacity: 1;
+}
+
+/* Headings */
+h1, h2, h3 {
+  color: var(--primary);
+  margin-top: var(--space-lg); /* Consistent spacing */
+  margin-bottom: var(--space-md);
+  line-height: 1.3;
+  font-weight: 600;
+}
+h1 { font-size: var(--font-size-h1); text-align: center; margin-bottom: 0; margin-top: 0; }
+h2 { font-size: var(--font-size-h2); border-bottom: var(--border-width) solid var(--border-color); padding-bottom: var(--space-sm); }
+h3 { font-size: var(--font-size-h3); margin-top: var(--space-md); margin-bottom: var(--space-sm); } /* Adjusted spacing for H3 */
+
+/* Utility class for screen readers */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
+}
+
+/* Utility class for error messages */
+.error-message {
+    color: var(--accent);
+    font-weight: 500;
+    padding: var(--space-sm) var(--space-md);
+    background-color: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+    border: var(--border-width) solid color-mix(in srgb, var(--accent) 30%, var(--border-color));
+    border-radius: var(--border-radius-md);
+    text-align: center;
+}
+[data-theme="dark"] .error-message {
+    background-color: color-mix(in srgb, var(--accent) 15%, var(--card-bg));
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border-color));
+}
+
+/*==============================
+  App Header Styles
+==============================*/
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg); /* Consistent spacing */
+  padding: var(--space-sm) 0;
+  flex-shrink: 0;
+  gap: var(--space-sm);
+}
+
+/* Wrapper for title/logo/slogan */
+.title-slogan-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-grow: 1;
+  margin: 0 var(--space-sm);
+}
+
+/* Style for the logo and title line */
+.logo-title-line {
+    display: flex;
+    align-items: center; /* Vertically center logo and title */
+    gap: 0.5em;
+    width: 100%;
+}
+
+/* Header Logo Styling */
+.header-logo {
+    height: clamp(30px, 8vw, 40px);
+    width: auto;
+    flex-shrink: 0;
+}
+
+/* H1 and Slogan Styles */
+.app-header h1 {
+  text-align: left;
+  margin: 0;
+  line-height: 1.1;
+  color: var(--primary);
+  font-size: var(--font-size-h1);
+  white-space: nowrap;
+}
+
+.slogan {
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  margin: 0.1em 0 0 0;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1;
+  padding-left: calc(clamp(30px, 8vw, 40px) + 0.5em); /* Indent based on logo size */
+}
+
+/* Wrapper for header control buttons */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm); /* Consistent spacing */
+    flex-shrink: 0;
+}
+
+/* General style for icon toggle buttons in header */
+.icon-toggle {
+  background: var(--card-bg);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--border-radius-full); /* Circular */
+  padding: var(--space-sm); /* Consistent padding */
+  font-size: 1.1em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-duration-fast) var(--transition-timing-function);
+  box-shadow: var(--shadow-sm);
+  width: 40px; /* Fixed size */
+  height: 40px; /* Fixed size */
+  flex-shrink: 0;
+  color: var(--text);
+}
+.icon-toggle:hover {
+  background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.icon-toggle i {
+  line-height: 1;
+}
+
+/* Specific Toggles */
+.theme-toggle {}
+.audio-toggle {}
+.settings-toggle {}
+
+/* Style for muted audio button */
+.audio-toggle[aria-pressed="false"] {
+  background-color: color-mix(in srgb, var(--text-muted) 15%, var(--card-bg));
+  color: var(--text-muted);
+}
+.audio-toggle[aria-pressed="false"]:hover {
+  background-color: color-mix(in srgb, var(--text-muted) 25%, var(--card-bg));
+}
+
+/*==============================
+  Navigation & Tabs
+==============================*/
+.nav-tabs {
+  display: flex;
+  gap: var(--space-sm); /* Consistent gap */
+  margin-bottom: var(--space-lg); /* Consistent spacing */
+  flex-wrap: wrap;
+  border-bottom: var(--border-width) solid var(--border-color);
+  padding-bottom: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.tab-button {
+  flex-grow: 1;
+  flex-basis: auto;
+  padding: var(--space-sm) var(--space-md); /* Consistent padding */
+  border: none;
+  border-radius: var(--border-radius-md); /* Consistent radius */
+  background: var(--button-bg);
+  color: var(--button-text);
+  transition: all var(--transition-duration) var(--transition-timing-function);
+  font-size: var(--font-size-small);
+  text-align: center;
+  font-weight: 600; /* Make tab text slightly bolder */
+}
+.tab-button.active, .tab-button:hover {
+  background: var(--button-hover-bg);
+  color: var(--button-hover-text);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.tab-button[aria-hidden="true"] {
+    display: none;
+}
+
+/* Tab Content Visibility & Transition */
+.tab-content {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  /* Use transform for smoother fade/slide */
+  transform: translateY(10px);
+  transition: opacity var(--transition-duration) var(--transition-timing-function),
+              transform var(--transition-duration) var(--transition-timing-function),
+              visibility 0s var(--transition-duration) linear;
+  max-height: 0;
+  overflow: hidden;
+}
+.tab-content[hidden] {
+    display: none;
+}
+.tab-content.active {
+  visibility: visible;
+  opacity: 1;
+  position: relative;
+  transform: translateY(0);
+  transition: opacity var(--transition-duration) var(--transition-timing-function),
+              transform var(--transition-duration) var(--transition-timing-function),
+              visibility 0s 0s linear;
+  max-height: none;
+  overflow: visible;
+}
+
+/*==============================
+  Date Navigation
+==============================*/
+.date-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md); /* Consistent spacing */
+  margin: var(--space-lg) 0; /* Consistent spacing */
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.nav-arrow {
+  background: none;
+  border: none;
+  font-size: clamp(1.4rem, 4vw, 1.6rem);
+  color: var(--primary);
+  padding: var(--space-sm);
+  border-radius: var(--border-radius-full);
+  transition: background-color var(--transition-duration-fast) var(--transition-timing-function),
+              transform var(--transition-duration-fast) var(--transition-timing-function);
+}
+.nav-arrow:hover {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  transform: scale(1.1);
+}
+
+.date-display {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.date-text {
+  font-size: clamp(1rem, 3vw, 1.15rem);
+  font-weight: 500;
+  cursor: pointer;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius-lg); /* More rounded date */
+  transition: background-color var(--transition-duration-fast) var(--transition-timing-function),
+              box-shadow var(--transition-duration-fast) var(--transition-timing-function);
+  border: var(--border-width) solid transparent;
+  color: var(--text);
+}
+.date-text:hover {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Hide the actual date input */
+#hidden-date-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/*==============================
+  Personalized Welcome Message
+==============================*/
+#personalized-welcome {
+    text-align: center;
+    font-size: var(--font-size-base);
+    color: var(--text-muted);
+    margin-bottom: var(--space-md); /* Consistent spacing */
+    font-style: italic;
+}
+#user-name-placeholder {
+    font-weight: 600;
+    color: var(--primary);
+    font-style: normal;
+}
+[data-theme="dark"] #user-name-placeholder {
+    color: var(--primary-light);
+}
+
+/*==============================
+  Leveling System Styles
+==============================*/
+.level-container {
+  padding: var(--space-sm) 0;
+  text-align: center;
+  flex-shrink: 0;
+  margin-bottom: var(--space-md); /* Add space below level */
+}
+
+/* Prestige Stars Display */
+.prestige-stars-display {
+    text-align: center;
+    margin-bottom: var(--space-xs);
+    font-size: clamp(1rem, 3vw, 1.1rem);
+    line-height: 1;
+    color: #f1c40f;
+    height: 1.2em;
+    display: none; /* JS controls visibility */
+}
+.prestige-stars-display span {
+    margin: 0 1px;
+    display: inline-block;
+    vertical-align: middle;
+}
+[data-theme="dark"] .prestige-stars-display {
+    color: #f39c12;
+}
+
+.level-info {
+  font-size: clamp(1.0rem, 3vw, 1.15rem);
+  font-weight: 600;
+  color: var(--primary);
+  transition: color var(--transition-duration) var(--transition-timing-function);
+  margin-bottom: var(--space-sm);
+}
+.level-info.milestone {
+  color: var(--secondary);
+  font-weight: 700;
+}
+[data-theme="dark"] .level-info.milestone {
+  color: var(--secondary);
+}
+
+.level-progress-bar {
+  height: 20px;
+  max-width: 400px;
+  margin: 0 auto;
+  background: color-mix(in srgb, var(--border-color) 50%, var(--background));
+  border-radius: var(--border-radius-full); /* Fully rounded */
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow-inset);
+}
+
+#level-progress-fill {
+  background: var(--secondary);
+  height: 100%;
+  transition: width var(--transition-duration-long) var(--transition-timing-function-smooth); /* Smooth transition */
+}
+
+#level-progress-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-sm);
+  color: var(--text);
+  font-size: var(--font-size-xsmall);
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 1px 1px 1px rgba(255,255,255,0.5);
+  pointer-events: none;
+}
+[data-theme="dark"] #level-progress-text {
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+}
+
+/* Prestige Button */
+#prestige-button {
+  background-color: gold;
+  color: #333;
+  width: auto;
+  padding: var(--space-sm) var(--space-lg); /* More padding */
+  margin-top: var(--space-lg);
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: fit-content;
+  font-weight: 600;
+  border: var(--border-width) solid #b8860b;
+  border-radius: var(--border-radius-md);
+}
+#prestige-button:hover {
+  background-color: #ffd700;
+  color: black;
+  box-shadow: var(--shadow-md);
+}
+
+/*==============================
+  Suggested Achievement Styles
+==============================*/
+.suggested-achievement {
+  background-color: color-mix(in srgb, var(--secondary) 10%, var(--card-bg));
+  border: var(--border-width) solid color-mix(in srgb, var(--secondary) 50%, var(--border-color));
+  border-left: 5px solid var(--secondary);
+  border-radius: var(--border-radius-lg); /* More rounded */
+  padding: var(--space-sm) var(--space-md);
+  margin: var(--space-md) auto var(--space-lg) auto; /* Consistent spacing */
+  box-shadow: var(--shadow-sm);
+  transition: background-color var(--transition-duration) var(--transition-timing-function),
+              border-color var(--transition-duration) var(--transition-timing-function);
+  max-width: 500px;
+  flex-shrink: 0;
+}
+.suggested-achievement h4 {
+  margin-top: 0;
+  margin-bottom: var(--space-xs);
+  color: var(--secondary);
+  font-size: clamp(1.0rem, 3vw, 1.1rem);
+  font-weight: 600;
+}
+.suggested-achievement .suggestion-details {
+  margin-bottom: var(--space-xs);
+  line-height: 1.4;
+  font-size: var(--font-size-small);
+  color: var(--text);
+}
+[data-theme="dark"] .suggested-achievement {
+  background-color: color-mix(in srgb, var(--secondary) 15%, var(--card-bg));
+  border-color: color-mix(in srgb, var(--secondary) 60%, var(--border-color));
+  border-left-color: var(--secondary);
+}
+[data-theme="dark"] .suggested-achievement h4 {
+  color: var(--secondary);
+}
+[data-theme="dark"] .suggested-achievement .suggestion-details {
+  color: var(--text);
+}
+
+/*==============================
+  Daily Log: Pillar Grid, Mood, Progress
+==============================*/
+.pillar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-md); /* Consistent spacing */
+  margin-bottom: var(--space-lg);
+}
+
+.pillar-card {
+  background-color: var(--card-bg);
+  border: var(--border-width-lg) solid var(--border-color); /* Slightly thicker border */
+  padding: var(--space-md);
+  border-radius: var(--border-radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-duration) var(--transition-timing-function-smooth), transform var(--transition-duration-fast) ease-out;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  min-height: 150px;
+  position: relative;
+}
+.pillar-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--pillar-color, var(--primary)) 50%, var(--border-color));
+}
+
+.pillar-header {
+    display: block;
+    margin-bottom: var(--space-xs);
+    padding-right: 30px;
+}
+
+.pillar-emoji {
+    display: block;
+    font-size: 1.5em;
+    line-height: 1;
+    margin-bottom: var(--space-xs);
+    text-align: left;
+}
+
+.pillar-card h3 {
+    margin: 0;
+    font-size: clamp(1rem, 2.5vw, 1.1rem);
+    transition: color var(--transition-duration) var(--transition-timing-function);
+    color: var(--text);
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.2;
+    text-align: left;
+}
+
+/* Checkmark pseudo-element */
+.pillar-card::after {
+  content: '✓';
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  color: color-mix(in srgb, var(--text-muted) 40%, transparent);
+  border: var(--border-width) solid color-mix(in srgb, var(--border-color) 50%, transparent);
+  border-radius: var(--border-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-duration) var(--transition-timing-function);
+  font-weight: bold;
+  opacity: 0.7;
+  transform: scale(0.8);
+  z-index: 2;
+}
+
+.pillar-description {
+  font-size: var(--font-size-xsmall);
+  opacity: 0.8;
+  font-style: italic;
+  margin-top: var(--space-sm);
+  line-height: 1.4;
+  color: var(--text);
+  flex-grow: 1;
+  margin-bottom: var(--space-sm);
+  padding-right: 30px;
+}
+
+/* Active state styling */
+.pillar-card.active {
+  background: color-mix(in srgb, var(--pillar-color) 15%, var(--card-bg));
+  border-color: var(--pillar-color);
+}
+.pillar-card.active::after {
+  background: var(--pillar-color);
+  color: white;
+  border-color: transparent;
+  opacity: 1;
+  transform: scale(1);
+}
+.pillar-card.active h3 {
+  color: var(--pillar-color);
+}
+
+/* --- Tooltip Styles (Pillar Cards) --- */
+.tooltip-container {
+  z-index: 5;
+  height: 18px;
+  margin-top: auto;
+  align-self: flex-end;
+  position: relative;
+}
+
+.info-icon {
+  background: none;
+  border: var(--border-width) solid var(--text-muted);
+  color: var(--text-muted);
+  border-radius: var(--border-radius-full);
+  width: 18px;
+  height: 18px;
+  font-size: 0.7em;
+  font-weight: bold;
+  line-height: 1;
+  text-align: center;
+  cursor: help;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-duration-fast) var(--transition-timing-function),
+              color var(--transition-duration-fast) var(--transition-timing-function);
+}
+.info-icon:hover, .info-icon:focus {
+  background-color: var(--text-muted);
+  color: var(--background);
+}
+
+/* Tooltip text bubble */
+.pillar-tooltip-text {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 5px;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xsmall);
+  text-align: left;
+  white-space: normal;
+  box-shadow: var(--shadow-sm);
+  z-index: 99;
+  min-width: 150px;
+  max-width: 200px;
+  visibility: hidden;
+  opacity: 0;
+  transition: var(--tooltip-transition);
+  pointer-events: none;
+}
+.pillar-tooltip-text.tooltip-visible {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Daily Progress Bar */
+.progress-container {
+  margin: var(--space-lg) 0;
+}
+.progress-bar {
+  height: 24px;
+  background: color-mix(in srgb, var(--border-color) 50%, var(--background));
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow-inset);
+}
+.progress-fill {
+  height: 100%;
+  transition: width var(--transition-duration-long) var(--transition-timing-function-smooth),
+              background-color var(--transition-duration-long) var(--transition-timing-function);
+  background: linear-gradient(90deg, #3498db, #2ecc71);
+}
+.progress-bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-sm);
+  color: var(--text);
+  font-size: var(--font-size-xsmall);
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 1px 1px 1px rgba(255,255,255,0.5);
+  pointer-events: none;
+}
+[data-theme="dark"] .progress-bar-text {
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+}
+.progress-fill.saved {
+  background: var(--saved-color);
+}
+.progress-info {
+  text-align: center;
+  margin-top: var(--space-sm);
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  opacity: 0.9;
+}
+
+/* Save/Unlock Buttons */
+.save-button, #unlock-button {
+  width: 100%;
+  padding: var(--space-md); /* Larger padding */
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-lg); /* More rounded */
+  cursor: pointer;
+  transition: opacity var(--transition-duration-fast) var(--transition-timing-function),
+              background-color var(--transition-duration-fast) var(--transition-timing-function),
+              transform var(--transition-duration-fast) ease-out,
+              box-shadow var(--transition-duration-fast) var(--transition-timing-function);
+  font-size: clamp(1rem, 3vw, 1.1rem);
+  margin-top: var(--space-md);
+  font-weight: 600;
+}
+#unlock-button {
+  background-color: var(--secondary);
+}
+.save-button:hover, #unlock-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Mood Tracker */
+.mood-tracker {
+  margin: var(--space-lg) 0;
+  padding: var(--space-md);
+  background: var(--mood-bg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-inset);
+  border: var(--border-width) solid var(--border-color);
+}
+.mood-tracker h3 {
+  margin-top: 0;
+  margin-bottom: var(--space-md);
+  color: var(--primary);
+  text-align: center;
+}
+.mood-options {
+  display: flex;
+  justify-content: space-around;
+  margin-top: var(--space-sm);
+}
+.mood-option {
+  font-size: clamp(1.8rem, 6vw, 2.3rem);
+  cursor: pointer;
+  transition: all var(--transition-duration-fast) var(--transition-timing-function);
+  padding: var(--space-xs);
+  border-radius: var(--border-radius-full);
+}
+.mood-option:not(.selected) {
+  opacity: 0.6;
+  transform: scale(0.9);
+  filter: grayscale(50%);
+}
+.mood-option:not(.selected):hover {
+  transform: scale(1.05);
+  opacity: 0.8;
+  filter: grayscale(20%);
+}
+.mood-option.selected {
+  opacity: 1;
+  transform: scale(1.15);
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.15)) grayscale(0%);
+}
+
+/* ... (Rest of the CSS remains largely the same, but would benefit from similar consistency review) ... */
+
+/* --- Ensure specific styles from previous updates are retained --- */
+/* (e.g., header controls layout, modal styles, form styles, etc.) */
+
+/*==============================
+  Responsive Adjustments
+==============================*/
+@media (max-width: 768px) {
+    /* Adjust grid for stats dashboard on medium screens */
+    .stats-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+}
+
+@media (max-width: 480px) {
+    /* General adjustments for small screens */
+    .container { padding: var(--space-sm); padding-bottom: 80px; } /* Less padding */
+    .guide-toggle { font-size: 0.9em; padding: var(--space-sm) var(--space-md); }
+    .tab-button { font-size: 0.85em; padding: var(--space-sm); }
+    .date-text { font-size: 1em; }
+    .pillar-grid { grid-template-columns: 1fr 1fr; gap: var(--space-sm); } /* Force 2 columns */
+    .pillar-card { padding: var(--space-sm); min-height: 140px; }
+    .tooltip-container { height: 16px; }
+    .info-icon { width: 16px; height: 16px; font-size: 0.6em;}
+    .mood-option { font-size: clamp(1.6rem, 8vw, 2rem); }
+    .add-note-form textarea { min-height: 60px; }
+    #toast-container { right: 10px; bottom: 10px; left: 10px; width: auto; max-width: calc(100% - 20px); } /* Full width toasts */
+    .toast { max-width: none; }
+    .calendar { gap: 3px; }
+    .calendar-day { min-height: 50px; padding: var(--space-xs); font-size: var(--font-size-xsmall); } /* Smaller calendar days */
+    .calendar-day .day-number { font-size: 0.85em; }
+    .pillar-block { width: 5px; height: 5px; }
+    .nav-tabs { gap: var(--space-xs); }
+    .modal-content { width: 95%; padding: var(--space-md); } /* Wider modals */
+    :root { --chart-label-size: 8px; --chart-data-point-radius: 4px; --chart-data-point-hover-radius: 5px; }
+    .chart-legend-list { min-width: 100px; font-size: var(--font-size-xsmall); } /* Smaller legend */
+    #achievement-board-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); } /* Ensure 2 columns */
+    .achievement-card .icon-container i { font-size: 2rem; }
+    .timeline-controls { gap: var(--space-sm); flex-direction: column; align-items: stretch; } /* Stack controls */
+    .timeline-controls select { min-width: 100%; }
+    .stats-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--space-sm); } /* Adjust stats grid */
+    .stat-card { padding: var(--space-sm); min-height: 80px; }
+    .stat-value { font-size: clamp(1.1rem, 3.5vw, 1.3rem); }
+    .modal-content .form-group { margin-bottom: var(--space-md); }
+    .modal-content input[type="text"] { padding: var(--space-sm); }
+    .modal-content button:not(.modal-close-btn) { padding: var(--space-sm) var(--space-md); }
+    .collapsible-trigger { padding: var(--space-sm) var(--space-md); font-size: 0.95em; }
+    .collapsible-trigger[aria-expanded="true"] + .collapsible-content { padding: var(--space-md); }
+    #habit-plan-form label[for^="plan-type-"] { font-size: var(--font-size-small); }
+    .saved-plan-item { flex-direction: column; align-items: stretch; gap: var(--space-sm); } /* Stack plan details/actions */
+    .plan-actions { justify-content: flex-end; }
+    .plan-list-btn { padding: var(--space-xs) var(--space-sm); }
+    .onboarding-content { width: 95%; } /* Wider onboarding modal */
+    .settings-modal-content { width: 95%; } /* Wider settings modal */
+    .step-navigation { flex-direction: column; gap: var(--space-sm); } /* Stack onboarding buttons */
+    .onboarding-btn { width: 100%; }
+    .pillar-checkbox-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+    .tooltip-text.right-tooltip { /* Adjust planner tooltip position */
+        left: auto;
+        right: 100%;
+        transform: translateY(-50%) translateX(-5px); /* Move left */
+        margin-left: 0;
+        margin-right: 5px;
+    }
+    /* Responsive Header Layout */
+    .app-header {
+        flex-direction: row; /* Keep row layout */
+        gap: var(--space-xs);
+        margin-bottom: var(--space-md);
+        justify-content: space-between; /* Ensure space between sides */
+    }
+    .title-slogan-wrapper {
+        align-items: center; /* Center align the title block */
+        text-align: center; /* Center text within the block */
+        margin: 0 var(--space-xs); /* Reduced margin */
+    }
+    .logo-title-line {
+        justify-content: center; /* Center logo and title within their line */
+        align-items: center; /* Ensure vertical alignment */
+    }
+    .slogan {
+        padding-left: 0; /* Remove fixed padding */
+        text-align: center; /* Center slogan text */
+        width: 100%; /* Allow slogan to take full width */
+    }
+    .header-controls {
+        gap: var(--space-xs); /* Reduced gap */
+    }
+    .icon-toggle { width: 36px; height: 36px; font-size: 1em; padding: var(--space-xs); } /* Smaller icon buttons */
+}
+#2d3436;         /* Dark Gray (Main Text) */
+  --text-muted: #718093;   /* Medium Gray (Subtle Text, Labels) */
+  --border-color: #dfe6e9; /* Light Gray (Borders, Dividers) */
+  --button-bg: #6ab4de;     /* Light Blue (Default Buttons) */
+  --button-text: var(--text);
+  --button-hover-bg: var(--primary);
+  --button-hover-text: white;
+  --saved-color: #f1c40f;   /* Yellow (Saved Day Indicator) */
+  --grid-color: #c8d6e5;    /* Polygon Chart Grid Lines */
+  --mood-bg: rgba(255, 255, 255, 0.9); /* Mood Selector Background */
+  --guide-bg: #f8f9fa;      /* Help/Guide Section Background */
+  --achievement-bg: #fffbe6; /* Light Yellow (Achievement Cards) */
+  --achievement-border: #ffeba7;
+  --collapsible-bg: color-mix(in srgb, var(--card-bg) 95%, var(--background)); /* Slightly off-white */
+  --tooltip-bg: #2c3e50;    /* Dark Tooltip Background */
+  --tooltip-text: white;    /* Light Tooltip Text */
+  --focus-ring-color: #3498db; /* Blue Focus Outline */
+  --modal-overlay-bg: rgba(0, 0, 0, 0.6); /* Modal Background Dim */
+  --toast-success-bg: var(--secondary);
+  --toast-error-bg: var(--accent);
+  --toast-info-bg: #3498db; /* Standard Blue */
+
+  /* Transitions */
+  --transition-duration: 0.3s;
+  --transition-duration-fast: 0.15s;
+  --transition-duration-long: 0.6s; /* For progress bars */
+  --tooltip-transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  --collapsible-transition: max-height 0.4s ease-out, padding 0.4s ease-out, opacity 0.4s ease-out;
+
+  /* Font Sizes (Responsive) */
+  --font-size-base: clamp(1rem, 1.5vw + 0.5rem, 1.1rem);
+  --font-size-h1: clamp(1.6rem, 5vw, 2.2rem);
+  --font-size-h2: clamp(1.3rem, 4vw, 1.6rem);
+  --font-size-h3: clamp(1.1rem, 3.5vw, 1.3rem);
+  --font-size-small: clamp(0.8rem, 1vw + 0.5rem, 0.9rem);
+  --font-size-xsmall: clamp(0.7rem, 0.8vw + 0.4rem, 0.8rem);
+
+  /* Chart Specific */
+  --chart-label-size: 9px;
+  --chart-tooltip-size: 10px;
+  --chart-data-point-radius: 5px;
+  --chart-data-point-hover-radius: 6px;
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --primary: #3498db;       /* Bright Blue */
+  --primary-light: #5dade2;
+  --secondary: #2ecc71;     /* Bright Green */
+  --accent: #e74c3c;       /* Red (Stays the same) */
+  --background: #2c3e50;   /* Dark Blue-Gray */
+  --card-bg: #34495e;      /* Darker Blue-Gray */
+  --text: #ecf0f1;         /* Light Gray */
+  --text-muted: #95a5a6;   /* Lighter Muted Gray */
+  --border-color: #46627f; /* Muted Blue */
+  --button-bg: #5dade2;     /* Slightly Brighter Blue */
+  --button-text: var(--text); /* Use dark theme text */
+  --button-hover-bg: var(--primary);
+  --button-hover-text: white;
+  --saved-color: #f39c12;   /* Orange */
+  --grid-color: #576574;    /* Darker Grid Lines */
+  --mood-bg: rgba(0, 0, 0, 0.2);
+  --guide-bg: #2c3e50;
+  --achievement-bg: #4a4a2a; /* Dark Yellow/Brown */
+  --achievement-border: #7a7a4a;
+  --collapsible-bg: color-mix(in srgb, var(--card-bg) 95%, var(--background));
+  --tooltip-bg: #ecf0f1;    /* Light Tooltip Background */
+  --tooltip-text: #2c3e50;  /* Dark Tooltip Text */
+  --focus-ring-color: #5dade2;
+  --modal-overlay-bg: rgba(0, 0, 0, 0.7);
+  /* Toast colors remain the same */
+}
+
+/*==============================
+  Global Styles & Accessibility
+==============================*/
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  height: 100%; /* Ensure html takes full height */
+}
+
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  transition: background-color var(--transition-duration), color var(--transition-duration);
+  line-height: 1.6;
+  font-size: var(--font-size-base);
+  min-height: 100%; /* Ensure body takes at least full height */
+  display: flex; /* Use flexbox to manage layout */
+  flex-direction: column; /* Stack children vertically */
+}
+
+/* Main container for centering content */
+.container {
+  position: relative; /* Needed for absolute positioning of children like modals */
+  width: 100%;
+  max-width: 850px; /* Max width for content */
+  margin: 0 auto; /* Center horizontally */
+  padding: clamp(10px, 3vw, 20px); /* Responsive padding */
+  padding-bottom: 100px; /* Extra bottom padding for fixed guide */
+  flex-grow: 1; /* Allow container to grow and take available space */
+}
+
+/* Main content area within the container */
+main {
+  position: relative; /* Needed for absolute positioning of tab children */
+  min-height: 400px; /* Give main some minimum height */
+  flex-grow: 1; /* Allow main content to fill space */
+}
+
+/* Accessibility: Visible focus states */
+*:focus-visible {
+  outline: 3px solid var(--focus-ring-color);
+  outline-offset: 2px; /* Slightly more offset */
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--focus-ring-color) 30%, transparent);
+  border-radius: 4px;
+}
+/* Hide default focus outline when not using keyboard navigation */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Base button styling */
+button, .button-like {
+  cursor: pointer;
+  transition: background-color var(--transition-duration), color var(--transition-duration), opacity var(--transition-duration), transform var(--transition-duration-fast) ease-out, box-shadow var(--transition-duration);
+  border-radius: 6px;
+  padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px);
+  border: none;
+  font-size: var(--font-size-small);
+  font-weight: 500;
+  text-align: center;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1.4;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+}
+button:hover, .button-like:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+button:active, .button-like:active {
+  transform: translateY(0px);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+  opacity: 1;
+}
+
+/* Headings */
+h1, h2, h3 {
+  color: var(--primary);
+  margin-top: 1.6em;
+  margin-bottom: 0.8em;
+  line-height: 1.3;
+  font-weight: 600; /* Slightly bolder */
+}
+h1 { font-size: var(--font-size-h1); text-align: center; margin-bottom: 0; margin-top: 0; }
+h2 { font-size: var(--font-size-h2); border-bottom: 1px solid var(--border-color); padding-bottom: 0.4em;}
+h3 { font-size: var(--font-size-h3); }
+
+/* Utility class for screen readers */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
+}
+
+/* Utility class for error messages */
+.error-message {
+    color: var(--accent);
+    font-weight: 500;
+    padding: 10px;
+    background-color: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border-color));
+    border-radius: 6px;
+    text-align: center;
+}
+[data-theme="dark"] .error-message {
+    background-color: color-mix(in srgb, var(--accent) 15%, var(--card-bg));
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border-color));
+}
+
+/*==============================
+  App Header Styles
+==============================*/
+.app-header {
+  display: flex;
+  justify-content: space-between; /* Pushes items to edges */
+  align-items: center; /* Align items vertically */
+  margin-bottom: 1.5rem;
+  padding: 10px 0;
+  flex-shrink: 0; /* Prevent header from shrinking */
+  gap: 10px; /* Add gap between header items */
+}
+
+/* Wrapper for title/logo/slogan */
+.title-slogan-wrapper {
+  display: flex; /* Use flexbox */
+  flex-direction: column; /* Stack logo/title line and slogan vertically */
+  align-items: flex-start; /* Align items to the start (left) */
+  flex-grow: 1; /* Allow this wrapper to take available space */
+  margin: 0 clamp(5px, 2vw, 10px); /* Add horizontal margin */
+}
+
+/* Style for the logo and title line */
+.logo-title-line {
+    display: flex; /* Align logo and H1 horizontally */
+    /* *** MODIFIED: Changed align-items to center *** */
+    align-items: center; /* Align items vertically center */
+    gap: 0.5em; /* Space between logo and title */
+    width: 100%; /* Take full width of parent */
+}
+
+/* Header Logo Styling */
+.header-logo {
+    height: clamp(30px, 8vw, 40px); /* Responsive height */
+    width: auto; /* Maintain aspect ratio */
+    flex-shrink: 0; /* Prevent logo from shrinking */
+    /* vertical-align: middle; /* Removed, align-items handles it */
+}
+
+/* H1 and Slogan Styles */
+.app-header h1 {
+  text-align: left; /* Align title left */
+  margin: 0; /* Remove default margins */
+  line-height: 1.1; /* Adjust line height */
+  color: var(--primary);
+  font-size: var(--font-size-h1);
+  white-space: nowrap; /* Prevent title wrapping if possible */
+}
+
+.slogan {
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  margin: 0.1em 0 0 0; /* Adjust top margin slightly */
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1; /* Adjust line height */
+  /* Indent slogan slightly to align under the 'W' of WellSpring */
+  padding-left: calc(clamp(30px, 8vw, 40px) + 0.5em); /* Logo width + gap */
+}
+
+/* *** ADDED: Wrapper for header control buttons *** */
+.header-controls {
+    display: flex;
+    align-items: center; /* Align buttons vertically */
+    gap: 0.5rem; /* Space between buttons */
+    flex-shrink: 0; /* Prevent controls from shrinking */
+}
+
+/* General style for icon toggle buttons in header */
+.icon-toggle {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 50%; /* Circular */
+  padding: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-duration-fast) ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  width: 40px; /* Fixed size */
+  height: 40px; /* Fixed size */
+  flex-shrink: 0; /* Prevent shrinking */
+  color: var(--text);
+}
+.icon-toggle:hover {
+  background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+}
+.icon-toggle i { /* Style for Font Awesome icons */
+  line-height: 1; /* Ensure icon is centered vertically */
+}
+
+/* Specific Toggles */
+.theme-toggle { /* Uses .icon-toggle base styles */ }
+.audio-toggle { /* Uses .icon-toggle base styles */ }
+.settings-toggle { /* Uses .icon-toggle base styles */ }
+
+/* Style for muted audio button */
+.audio-toggle[aria-pressed="false"] {
+  background-color: color-mix(in srgb, var(--text-muted) 15%, var(--card-bg));
+  color: var(--text-muted);
+}
+.audio-toggle[aria-pressed="false"]:hover {
+  background-color: color-mix(in srgb, var(--text-muted) 25%, var(--card-bg));
+}
+
+/*==============================
+  Navigation & Tabs
+==============================*/
+.nav-tabs {
+  display: flex;
+  gap: clamp(4px, 1.5vw, 8px); /* Responsive gap */
+  margin-bottom: 20px;
+  flex-wrap: wrap; /* Allow tabs to wrap on small screens */
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+  flex-shrink: 0; /* Prevent nav from shrinking */
+}
+
+.tab-button {
+  flex-grow: 1; /* Allow buttons to grow */
+  flex-basis: auto; /* Default basis */
+  padding: clamp(8px, 2vw, 10px) clamp(10px, 2.5vw, 16px);
+  border: none;
+  border-radius: 6px; /* Slightly less rounded */
+  background: var(--button-bg);
+  color: var(--button-text);
+  transition: all var(--transition-duration);
+  font-size: var(--font-size-small);
+  text-align: center;
+}
+.tab-button.active, .tab-button:hover {
+  background: var(--button-hover-bg);
+  color: var(--button-hover-text);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+.tab-button[aria-hidden="true"] {
+    display: none; /* Hide buttons when their content is hidden (e.g., Simple Mode) */
+}
+
+/* Tab Content Visibility */
+.tab-content {
+  /* Default state: hidden */
+  visibility: hidden;
+  opacity: 0;
+  position: absolute; /* Take out of flow */
+  top: 0; left: 0; right: 0; /* Cover main area */
+  transition: opacity var(--transition-duration) ease-in-out, visibility 0s var(--transition-duration) linear;
+  max-height: 0; /* Collapse height when hidden */
+  overflow: hidden;
+}
+.tab-content[hidden] { /* Use attribute selector for clarity */
+    display: none; /* Ensure it's not displayed */
+}
+.tab-content.active {
+  /* Active state: visible */
+  visibility: visible;
+  opacity: 1;
+  position: relative; /* Bring back into flow */
+  transition: opacity var(--transition-duration) ease-in-out, visibility 0s 0s linear;
+  max-height: none; /* Allow content height */
+  overflow: visible;
+}
+
+/*==============================
+  Date Navigation
+==============================*/
+.date-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 3vw, 15px);
+  margin: 25px 0;
+  flex-wrap: wrap; /* Allow wrapping */
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.nav-arrow {
+  background: none;
+  border: none;
+  font-size: clamp(1.4rem, 4vw, 1.6rem);
+  color: var(--primary);
+  padding: 8px;
+  border-radius: 50%;
+  transition: background var(--transition-duration), transform var(--transition-duration-fast) ease-out;
+}
+.nav-arrow:hover {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  transform: scale(1.1);
+}
+
+.date-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-text {
+  font-size: clamp(1rem, 3vw, 1.15rem);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: background var(--transition-duration), box-shadow var(--transition-duration);
+  border: 1px solid transparent;
+  color: var(--text);
+}
+.date-text:hover {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Hide the actual date input */
+#hidden-date-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/*==============================
+  Personalized Welcome Message
+==============================*/
+/* Uses .welcome-message class from modal styles */
+#personalized-welcome {
+    text-align: center;
+    font-size: var(--font-size-base);
+    color: var(--text-muted);
+    margin-bottom: 1rem; /* Space below */
+    font-style: italic;
+}
+#user-name-placeholder {
+    font-weight: 600;
+    color: var(--primary);
+    font-style: normal; /* Override italic */
+}
+[data-theme="dark"] #user-name-placeholder {
+    color: var(--primary-light);
+}
+
+/*==============================
+  Leveling System Styles
+==============================*/
+.level-container {
+  padding: 10px 0;
+  text-align: center;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Prestige Stars Display */
+.prestige-stars-display {
+    text-align: center;
+    margin-bottom: 4px; /* Space between stars and level text */
+    font-size: clamp(1rem, 3vw, 1.1rem); /* Adjust size as needed */
+    line-height: 1; /* Prevent extra vertical space */
+    color: #f1c40f; /* Gold color for stars */
+    height: 1.2em; /* Reserve space even if empty */
+    /* Add transition if desired, e.g., for color changes */
+    /* transition: color var(--transition-duration); */
+}
+
+.prestige-stars-display span {
+    margin: 0 1px; /* Tiny space between stars */
+    display: inline-block; /* Prevents wrapping issues */
+    vertical-align: middle; /* Align stars nicely */
+}
+
+/* Optional: Dark theme adjustment if needed */
+[data-theme="dark"] .prestige-stars-display {
+    color: #f39c12; /* Slightly different gold for dark theme if desired */
+}
+
+.level-info {
+  font-size: clamp(1.0rem, 3vw, 1.15rem);
+  font-weight: 600;
+  color: var(--primary);
+  transition: color var(--transition-duration);
+  margin-bottom: 8px;
+}
+/* Style for milestone levels (e.g., every 10 levels) */
+.level-info.milestone {
+  color: var(--secondary);
+  font-weight: 700;
+}
+[data-theme="dark"] .level-info.milestone {
+  color: var(--secondary); /* Keep bright green */
+}
+
+.level-progress-bar {
+  height: 20px;
+  max-width: 400px; /* Limit width */
+  margin: 0 auto; /* Center */
+  background: color-mix(in srgb, var(--border-color) 50%, var(--background));
+  border-radius: 10px; /* Rounded ends */
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+#level-progress-fill {
+  background: var(--secondary); /* Use secondary color for fill */
+  height: 100%;
+  transition: width var(--transition-duration-long) cubic-bezier(0.25, 1, 0.5, 1); /* Smooth transition */
+}
+
+#level-progress-text {
+  position: absolute;
+  inset: 0; /* Cover the parent */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  color: var(--text);
+  font-size: var(--font-size-xsmall);
+  font-weight: 600;
+  white-space: nowrap; /* Prevent text wrapping */
+  text-shadow: 1px 1px 1px rgba(255,255,255,0.5); /* Light text shadow */
+  pointer-events: none; /* Allow clicks through */
+}
+[data-theme="dark"] #level-progress-text {
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.3); /* Dark text shadow */
+}
+
+/* Prestige Button */
+#prestige-button {
+  background-color: gold; /* Make it stand out */
+  color: #333; /* Dark text for contrast */
+  width: auto;
+  padding: 10px 20px;
+  margin-top: 20px;
+  display: block; /* Or inline-block if preferred */
+  margin-left: auto;
+  margin-right: auto;
+  max-width: fit-content;
+  font-weight: 600;
+  border: 1px solid #b8860b; /* Dark gold border */
+}
+#prestige-button:hover {
+  background-color: #ffd700; /* Slightly lighter gold */
+  color: black;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+/*==============================
+  Prestige Stars Display
+==============================*/
+.prestige-stars-display {
+    text-align: center;
+    margin-bottom: 4px; /* Space between stars and welcome/level */
+    font-size: clamp(1rem, 3vw, 1.1rem); /* Adjust size as needed */
+    line-height: 1; /* Prevent extra vertical space */
+    color: #f1c40f; /* Gold color for stars */
+    height: 1.2em; /* Reserve space even if empty */
+    /* Hide by default - JS will set display: block when needed */
+    display: none;
+    /* Add transition if desired, e.g., for color changes */
+    /* transition: color var(--transition-duration); */
+}
+
+.prestige-stars-display span {
+    margin: 0 1px; /* Tiny space between stars */
+    display: inline-block; /* Prevents wrapping issues */
+    vertical-align: middle; /* Align stars nicely */
+}
+
+/* Optional: Dark theme adjustment if needed */
+[data-theme="dark"] .prestige-stars-display {
+    color: #f39c12; /* Slightly different gold for dark theme if desired */
+}
+
+/*==============================
+  Suggested Achievement Styles
+==============================*/
+.suggested-achievement {
+  background-color: color-mix(in srgb, var(--secondary) 10%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--secondary) 50%, var(--border-color));
+  border-left: 5px solid var(--secondary); /* Accent border */
+  border-radius: 8px;
+  padding: 10px 15px;
+  margin: 15px auto 20px auto; /* Center with margin */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.07);
+  transition: background-color var(--transition-duration), border-color var(--transition-duration);
+  max-width: 500px; /* Limit width */
+  flex-shrink: 0; /* Prevent shrinking */
+}
+.suggested-achievement h4 {
+  margin-top: 0;
+  margin-bottom: 6px;
+  color: var(--secondary);
+  font-size: clamp(1.0rem, 3vw, 1.1rem);
+  font-weight: 600;
+}
+.suggested-achievement .suggestion-details {
+  margin-bottom: 4px;
+  line-height: 1.4;
+  font-size: var(--font-size-small);
+  color: var(--text);
+}
+[data-theme="dark"] .suggested-achievement {
+  background-color: color-mix(in srgb, var(--secondary) 15%, var(--card-bg));
+  border-color: color-mix(in srgb, var(--secondary) 60%, var(--border-color));
+  border-left-color: var(--secondary);
+}
+[data-theme="dark"] .suggested-achievement h4 {
+  color: var(--secondary); /* Keep bright green */
+}
+[data-theme="dark"] .suggested-achievement .suggestion-details {
+  color: var(--text);
+}
+
+/*==============================
+  Daily Log: Pillar Grid, Mood, Progress
+==============================*/
+.pillar-grid {
+  display: grid;
+  /* Responsive columns: fit as many as possible with min width */
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: clamp(10px, 2vw, 15px); /* Responsive gap */
+  margin-bottom: 25px;
+}
+
+.pillar-card {
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-color);
+  padding: clamp(10px, 2.5vw, 15px);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all var(--transition-duration) cubic-bezier(0.4, 0, 0.2, 1), transform var(--transition-duration-fast) ease-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  min-height: 150px; /* Ensure cards have a minimum height */
+  position: relative; /* Needed for pseudo-element and tooltip positioning */
+}
+.pillar-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-color: color-mix(in srgb, var(--pillar-color, var(--primary)) 50%, var(--border-color)); /* Use pillar color for hover */
+}
+
+.pillar-header {
+    display: block; /* Stack emoji and title */
+    margin-bottom: 5px;
+    padding-right: 30px; /* Space for checkmark */
+}
+
+.pillar-emoji {
+    display: block; /* Emoji takes its own line */
+    font-size: 1.5em;
+    line-height: 1;
+    margin-bottom: 4px; /* Space below emoji */
+    text-align: left; /* Align emoji left */
+}
+
+.pillar-card h3 {
+    margin: 0;
+    font-size: clamp(1rem, 2.5vw, 1.1rem);
+    transition: color var(--transition-duration);
+    color: var(--text);
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.2;
+    text-align: left; /* Align title left */
+}
+
+
+/* Checkmark pseudo-element - Default state (faint/transparent) */
+.pillar-card::after {
+  content: '✓';
+  position: absolute;
+  top: clamp(8px, 2vw, 12px);
+  right: clamp(8px, 2vw, 12px);
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  color: color-mix(in srgb, var(--text-muted) 40%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-duration) ease;
+  font-weight: bold;
+  opacity: 0.7;
+  transform: scale(0.8);
+  z-index: 2; /* Above header */
+}
+
+.pillar-description {
+  font-size: var(--font-size-xsmall);
+  opacity: 0.8;
+  font-style: italic;
+  margin-top: 8px; /* Space below title */
+  line-height: 1.4;
+  color: var(--text);
+  flex-grow: 1; /* Let description take available vertical space */
+  margin-bottom: 8px; /* Add space below description before tooltip container */
+  padding-right: 30px; /* Avoid checkmark */
+}
+
+/* Active state styling */
+.pillar-card.active {
+  background: color-mix(in srgb, var(--pillar-color) 15%, var(--card-bg));
+  border-color: var(--pillar-color);
+}
+.pillar-card.active::after { /* Checkmark - Active state */
+  background: var(--pillar-color);
+  color: white;
+  border-color: transparent;
+  opacity: 1;
+  transform: scale(1);
+}
+.pillar-card.active h3 {
+  color: var(--pillar-color); /* Change heading color when active */
+}
+
+/* --- Tooltip Styles (Pillar Cards) --- */
+.tooltip-container {
+  z-index: 5; /* Above other card content */
+  height: 18px; /* Match icon height */
+  margin-top: auto; /* Push to bottom */
+  align-self: flex-end; /* Push to right */
+  position: relative; /* Needed for tooltip text positioning */
+}
+
+.info-icon { /* General info icon style */
+  background: none;
+  border: 1px solid var(--text-muted);
+  color: var(--text-muted);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.7em;
+  font-weight: bold;
+  line-height: 1; /* Center content */
+  text-align: center;
+  cursor: help;
+  padding: 0;
+  display: inline-flex; /* Use flex for centering */
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-duration-fast), color var(--transition-duration-fast);
+}
+.info-icon:hover, .info-icon:focus {
+  background-color: var(--text-muted);
+  color: var(--background); /* Invert colors */
+}
+
+/* Tooltip text bubble */
+.pillar-tooltip-text {
+  position: absolute;
+  bottom: 100%; /* Position above the icon container */
+  right: 0; /* Align with the right edge of the container */
+  margin-bottom: 5px; /* Space between icon and tooltip */
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: var(--font-size-xsmall);
+  text-align: left;
+  white-space: normal; /* Allow text wrapping */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 99; /* Ensure tooltip is on top */
+  min-width: 150px;
+  max-width: 200px;
+  /* Visibility handled by class */
+  visibility: hidden;
+  opacity: 0;
+  transition: var(--tooltip-transition);
+  pointer-events: none; /* Prevent tooltip from blocking interactions */
+}
+.pillar-tooltip-text.tooltip-visible {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto; /* Allow interaction if needed (e.g., copy text) */
+}
+
+/* Daily Progress Bar */
+.progress-container {
+  margin: 35px 0;
+}
+.progress-bar {
+  height: 24px;
+  background: color-mix(in srgb, var(--border-color) 50%, var(--background));
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+.progress-fill {
+  height: 100%;
+  transition: width var(--transition-duration-long) cubic-bezier(0.25, 1, 0.5, 1), background-color var(--transition-duration-long) ease;
+  background: linear-gradient(90deg, #3498db, #2ecc71); /* Default gradient */
+}
+.progress-bar-text { /* Text inside progress bar */
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  color: var(--text);
+  font-size: var(--font-size-xsmall);
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 1px 1px 1px rgba(255,255,255,0.5);
+  pointer-events: none;
+}
+[data-theme="dark"] .progress-bar-text {
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+}
+.progress-fill.saved { /* Style when day is saved */
+  background: var(--saved-color); /* Use saved color */
+}
+.progress-info { /* Text below progress bar (XP, Streak) */
+  text-align: center;
+  margin-top: 10px;
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  opacity: 0.9;
+}
+
+/* Save/Unlock Buttons */
+.save-button, #unlock-button {
+  width: 100%;
+  padding: clamp(10px, 3vw, 15px);
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity var(--transition-duration), background-color var(--transition-duration), transform var(--transition-duration-fast) ease-out, box-shadow var(--transition-duration);
+  font-size: clamp(1rem, 3vw, 1.1rem);
+  margin-top: 15px;
+  font-weight: 600;
+}
+#unlock-button {
+  background-color: var(--secondary); /* Different color for unlock */
+}
+.save-button:hover, #unlock-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Mood Tracker */
+.mood-tracker {
+  margin: 25px 0;
+  padding: 20px;
+  background: var(--mood-bg);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-color);
+}
+.mood-tracker h3 {
+  margin-top: 0;
+  margin-bottom: 15px; /* More space below heading */
+  color: var(--primary);
+  text-align: center;
+}
+.mood-options {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 10px;
+}
+.mood-option {
+  font-size: clamp(1.8rem, 6vw, 2.3rem);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 5px; /* Add padding for easier clicking */
+  border-radius: 50%; /* Make focus outline circular */
+}
+/* Default state: slightly faded and smaller */
+.mood-option:not(.selected) {
+  opacity: 0.6;
+  transform: scale(0.9);
+  filter: grayscale(50%);
+}
+/* Hover state for non-selected options */
+.mood-option:not(.selected):hover {
+  transform: scale(1.05);
+  opacity: 0.8;
+  filter: grayscale(20%);
+}
+/* Selected state: full opacity, larger, no grayscale */
+.mood-option.selected {
+  opacity: 1;
+  transform: scale(1.15);
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.15)) grayscale(0%);
+}
+
+/*==============================
+  Calendar
+==============================*/
+.month-nav { display: flex; justify-content: space-between; align-items: center; margin: 20px 0; }
+.month-nav button { background: var(--button-bg); color: var(--button-text); }
+.month-nav h3 { color: var(--primary); margin: 0; /* Remove default margins */ }
+.calendar-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-size-xsmall); font-weight: 600; color: var(--text-muted); margin-bottom: 5px; padding: 0 clamp(3px, 1vw, 5px); }
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(35px, 1fr)); /* 7 columns */
+    gap: clamp(3px, 1vw, 5px);
+}
+.calendar-day {
+    padding: clamp(4px, 1.5vw, 8px);
+    text-align: center;
+    border-radius: 6px;
+    background: var(--card-bg);
+    min-height: clamp(55px, 12vw, 65px);
+    border: 1px solid var(--border-color);
+    position: relative;
+    transition: background var(--transition-duration), border-color var(--transition-duration), transform var(--transition-duration-fast) ease-out, box-shadow 0.2s ease;
+    font-size: var(--font-size-small);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: var(--text);
+}
+.calendar-day .day-number { font-weight: 600; font-size: clamp(0.8rem, 2vw, 0.95rem); }
+.calendar-day.disabled { opacity: 0.4; background: var(--background); cursor: not-allowed; border-style: dashed; }
+.calendar-day:not(.disabled):hover { background-color: color-mix(in srgb, var(--card-bg) 90%, var(--primary)); border-color: var(--primary); transform: scale(1.03); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.calendar-day.saved { border: 2px solid var(--saved-color); background-color: color-mix(in srgb, var(--saved-color) 10%, var(--card-bg)); }
+.calendar-day .mood-indicator { position: absolute; top: 2px; left: 2px; font-size: 0.8em; opacity: 0.9; }
+.pillar-blocks { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; align-self: center; margin-top: 4px; }
+.pillar-block { width: clamp(6px, 1.5vw, 8px); height: clamp(6px, 1.5vw, 8px); border-radius: 2px; }
+.calendar-day.first-day { border-color: var(--secondary); border-width: 2px; position: relative; }
+.calendar-day.first-day::after { content: '🌱'; position: absolute; bottom: 2px; right: 3px; font-size: 0.7em; line-height: 1; color: var(--secondary); opacity: 0.9; pointer-events: none; }
+#calendar-empty-state { text-align: center; margin-top: 20px; opacity: 0.7; color: var(--text-muted); }
+
+/*==============================
+  Journey Tab (Timeline)
+==============================*/
+#journey h2 { color: var(--primary); }
+.add-note-form { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
+.add-note-form h3 { margin-top: 0; margin-bottom: 10px; color: var(--primary); }
+.add-note-form textarea { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; font-size: 0.95em; min-height: 60px; margin-bottom: 10px; background-color: var(--background); color: var(--text); resize: vertical; overflow: hidden; transition: border-color var(--transition-duration), box-shadow var(--transition-duration); }
+.add-note-form textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); }
+.add-note-form button { background: var(--secondary); color: white; padding: 10px 15px; }
+.timeline-controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; padding: 10px; background-color: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.timeline-controls label { font-weight: 500; font-size: var(--font-size-small); color: var(--text-muted); margin-right: 0.3rem; }
+.timeline-controls select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--background); color: var(--text); font-size: var(--font-size-small); cursor: pointer; transition: border-color var(--transition-duration), box-shadow var(--transition-duration); flex-grow: 1; min-width: 120px; }
+.timeline-controls select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
+#timeline-entries { margin-top: 10px; max-height: 60vh; overflow-y: auto; padding: 10px 5px; position: relative; border: 1px solid var(--border-color); border-radius: 8px; background-color: color-mix(in srgb, var(--border-color) 20%, var(--background)); }
+.timeline-entry { padding: 15px 20px; background: var(--card-bg); border-radius: 8px; margin: 15px 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); position: relative; border-left: 5px solid var(--primary); transition: box-shadow var(--transition-duration); color: var(--text); }
+.timeline-entry:hover { box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12); }
+.timeline-date { font-size: var(--font-size-xsmall); color: var(--text-muted); opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
+.timeline-date .icon { font-size: 1.2em; line-height: 1; }
+.timeline-entry.note-entry { border-left-color: var(--secondary); background-color: color-mix(in srgb, var(--secondary) 5%, var(--card-bg)); }
+.note-entry p { margin: 0; font-size: 0.95em; line-height: 1.6; white-space: pre-wrap; }
+.timeline-entry.achievement-entry { background-color: var(--achievement-bg); border-left-color: var(--saved-color); border: 1px solid var(--achievement-border); border-left-width: 5px; }
+.achievement-entry h4 { margin: 0 0 8px 0; color: var(--primary); font-size: 1.1em; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.achievement-entry .flavor-text-container {
+    opacity: 0.95;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    font-size: var(--font-size-small);
+    display: block;
+    color: color-mix(in srgb, var(--text) 85%, black);
+    line-height: 1.45;
+    border-left: 3px solid color-mix(in srgb, var(--saved-color) 50%, var(--border-color));
+    padding: 0.5em 0.75em;
+    margin-left: 0;
+    background-color: color-mix(in srgb, var(--card-bg) 95%, transparent);
+    border-radius: 4px;
+}
+/* Shared flavor text styles defined in Modal section apply here */
+.achievement-entry .description { margin: 8px 0 0 0; font-size: var(--font-size-small); line-height: 1.5; color: var(--text-muted); border-top: 1px dashed var(--border-color); padding-top: 8px; }
+.timeline-entry.prestige-entry { border-left-color: gold; background-color: color-mix(in srgb, gold 10%, var(--card-bg)); border: 1px solid color-mix(in srgb, gold 50%, var(--border-color)); border-left-width: 5px; }
+.timeline-entry.prestige-entry h4 { font-weight: 600; color: color-mix(in srgb, gold 80%, black); }
+[data-theme="dark"] .timeline-entry.note-entry { background-color: color-mix(in srgb, var(--secondary) 10%, var(--card-bg)); }
+[data-theme="dark"] .achievement-entry .flavor-text-container { color: color-mix(in srgb, var(--text) 90%, white); border-left-color: color-mix(in srgb, var(--saved-color) 60%, var(--border-color)); background-color: color-mix(in srgb, var(--card-bg) 92%, transparent); }
+/* Dark mode flavor text parts handled by shared rules below */
+[data-theme="dark"] .achievement-entry .description { color: var(--text-muted); border-top-color: var(--border-color); }
+[data-theme="dark"] .timeline-entry.prestige-entry { background-color: color-mix(in srgb, #b8860b 15%, var(--card-bg)); border-color: color-mix(in srgb, gold 50%, var(--border-color)); border-left-color: #FFD700; border-left-width: 5px; }
+[data-theme="dark"] .timeline-entry.prestige-entry h4 { color: #FFD700; }
+[data-theme="dark"] #timeline-entries { background-color: color-mix(in srgb, var(--border-color) 10%, var(--background)); }
+[data-theme="dark"] .timeline-controls { background-color: var(--card-bg); }
+[data-theme="dark"] .timeline-controls select { background-color: var(--background); color: var(--text); border-color: var(--border-color); }
+
+/*==============================
+  Analytics Section
+==============================*/
+#view-analytics-btn { width: 100%; padding: clamp(10px, 3vw, 15px); border: none; border-radius: 8px; background: var(--button-bg); color: var(--button-text); transition: background var(--transition-duration); margin-top: 15px; font-size: clamp(1rem, 3vw, 1.1rem); }
+#analytics-container { margin: 20px 0; border-radius: 12px; background: var(--card-bg); padding: 20px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); border: 1px solid var(--border-color); }
+#analytics-container h3 { text-align: center; margin-top: 0; color: var(--primary); }
+/* .welcome-message used by personalized welcome and analytics */
+#user-name-placeholder-analytics { font-weight: 600; color: var(--primary); } /* Specific ID for analytics name */
+[data-theme="dark"] #user-name-placeholder-analytics { color: var(--primary-light); }
+#analytics-toggles { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+#analytics-toggles button { padding: 8px 12px; border: none; border-radius: 6px; background: var(--button-bg); color: var(--button-text); transition: background var(--transition-duration); }
+#analytics-toggles button.active { background: var(--secondary); color: white; }
+#analytics-description { margin-top: 15px; font-size: var(--font-size-small); text-align: center; color: var(--text-muted); }
+/* --- Polygon Chart Styles --- */
+ #polygon-chart-container { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+ .chart-svg-wrapper { flex: 1 1 240px; min-width: 200px; display: flex; justify-content: center; align-items: center; min-height: 300px; }
+ .chart-svg-wrapper svg { max-width: 100%; height: auto; overflow: visible; transform-origin: center center; }
+ .chart-legend-list { flex: 1 1 150px; min-width: 140px; list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+ .chart-legend-list li { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-small); padding: 4px 6px; border-radius: 4px; transition: background-color var(--transition-duration); cursor: default; color: var(--text); }
+ .chart-legend-list li:hover { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
+ .legend-color-box { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
+ [data-theme="dark"] .legend-color-box { border: 1px solid rgba(255,255,255,0.1); }
+ .legend-emoji { margin-right: -2px; display: inline-block; width: 1.2em; text-align: center; }
+ .legend-name { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+ .legend-value { font-weight: 600; color: var(--primary); font-size: var(--font-size-xsmall); }
+ [data-theme="dark"] .legend-value { color: var(--text); }
+ #polygon-chart-container svg text { font-family: 'Segoe UI', system-ui, sans-serif; transition: opacity var(--transition-duration), fill var(--transition-duration); }
+ #polygon-chart-container svg .grid-circle { fill: none; stroke: var(--grid-color); stroke-width: 0.6; stroke-dasharray: none; transition: stroke var(--transition-duration); }
+ #polygon-chart-container svg .axis-line { stroke: var(--grid-color); stroke-width: 0.6; transition: stroke var(--transition-duration), opacity var(--transition-duration), stroke-width var(--transition-duration); }
+ #polygon-chart-container svg .data-polygon { stroke: var(--primary); stroke-width: 1.5; fill: color-mix(in srgb, var(--primary) 25%, transparent); transition: fill var(--transition-duration), stroke var(--transition-duration), opacity 0.5s ease-out 0.2s; opacity: 0; animation: polygon-shape-fade-in 0.5s ease-out 0.2s forwards; }
+ @keyframes polygon-shape-fade-in { from { opacity: 0; } to { opacity: 1; } }
+ #polygon-chart-container svg .data-point { stroke: var(--card-bg); stroke-width: 1.5; cursor: pointer; r: var(--chart-data-point-radius); fill: #cccccc; opacity: 0; transform: scale(0); transform-origin: center center; transition: fill var(--transition-duration), r var(--transition-duration), stroke var(--transition-duration), opacity 0.3s ease-out, transform 0.3s ease-out; }
+ #polygon-chart-container svg .data-point.point-visible { opacity: 1; transform: scale(1); }
+ #polygon-chart-container svg .axis-label { fill: var(--text-muted); font-size: var(--chart-label-size); font-weight: 500; text-anchor: middle; dominant-baseline: middle; pointer-events: none; transition: fill var(--transition-duration), font-weight var(--transition-duration); }
+ #polygon-chart-container svg .tooltip { opacity: 0; pointer-events: none; transition: opacity 0.15s ease-in-out; will-change: opacity; }
+ #polygon-chart-container svg .tooltip-bg { fill: var(--tooltip-bg); rx: 3; ry: 3; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)); }
+ #polygon-chart-container svg .tooltip-text { fill: var(--tooltip-text); font-size: var(--chart-tooltip-size); font-weight: 500; }
+ #polygon-chart-container svg g.data-point-group:hover > .tooltip,
+ #polygon-chart-container svg g.data-point-group:focus-within > .tooltip { opacity: 1; } /* Show on hover/focus */
+ #polygon-chart-container svg g.data-point-group:hover .data-point,
+ #polygon-chart-container svg g.data-point-group:focus-within .data-point { r: var(--chart-data-point-hover-radius); }
+ #polygon-chart-container svg .axis-line.highlight-axis { stroke-width: 1.5; /* Color set by JS */ }
+ #polygon-chart-container svg .axis-label.highlight-label { fill: var(--text); font-weight: 600; }
+ [data-theme="dark"] #polygon-chart-container svg .axis-label.highlight-label { fill: var(--primary-light); }
+/* Stats Dashboard Styles */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-top: 1rem; }
+@media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+.stat-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: box-shadow var(--transition-duration), transform var(--transition-duration-fast); min-height: 100px; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 3px 8px rgba(0,0,0,0.08); }
+.stat-label { font-size: var(--font-size-small); color: var(--text-muted); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; font-weight: 500; }
+.stat-icon { color: var(--primary); font-size: 0.9em; opacity: 0.8; width: 1.2em; text-align: center; }
+[data-theme="dark"] .stat-icon { color: var(--primary-light); }
+.stat-value { font-size: clamp(1.2rem, 4vw, 1.5rem); font-weight: 600; color: var(--primary); line-height: 1.2; }
+[data-theme="dark"] .stat-value { color: var(--text); }
+
+/*==============================
+  Achievement Board Styles
+==============================*/
+#achievements h2 { color: var(--primary); }
+.achievements-intro { text-align: center; font-size: var(--font-size-small); color: var(--text-muted); margin-bottom: 0.5rem; }
+.achievements-counter { text-align: center; font-size: var(--font-size-base); color: var(--text-muted); margin-top: 0; margin-bottom: 1rem; font-weight: 500; }
+[data-theme="dark"] .achievements-counter { color: var(--text-muted); }
+#achievement-board-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+@media (min-width: 480px) { #achievement-board-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 640px) { #achievement-board-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1024px) { #achievement-board-grid { grid-template-columns: repeat(5, 1fr); } }
+
+.achievement-card {
+    background-color: var(--card-bg);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1; /* Maintain square aspect ratio */
+    position: relative;
+    overflow: hidden;
+    transition: transform var(--transition-duration-fast) ease-in-out, box-shadow var(--transition-duration-fast) ease-in-out;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+}
+.achievement-card:hover {
+    transform: translateY(-4px) scale(1.03); /* Slightly lift and scale */
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+.achievement-card.locked {
+    opacity: 0.6;
+    filter: grayscale(80%);
+}
+.achievement-card .icon-container {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.5rem;
+    transition: opacity 0.3s ease-in-out;
+}
+.achievement-card .icon-container i { /* Icon styling */
+    font-size: clamp(2rem, 8vw, 2.5rem); /* Responsive icon size */
+    margin-bottom: 0.5rem;
+    line-height: 1;
+}
+.achievement-card .icon-container .icon-unlocked { color: var(--secondary); }
+.achievement-card .icon-container .icon-locked { color: var(--text-muted); }
+.achievement-card .icon-container .achievement-title {
+    font-size: var(--font-size-xsmall);
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3; /* Allow wrapping */
+}
+
+/*==============================
+  Modals (General, Welcome, Name, Achievement, Onboarding, Settings)
+==============================*/
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: var(--modal-overlay-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100; /* High z-index */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-duration) ease, visibility 0s var(--transition-duration) linear;
+    padding: 1rem; /* Padding for smaller screens */
+}
+.modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--transition-duration) ease, visibility 0s 0s linear;
+}
+.modal-content {
+    background-color: var(--card-bg);
+    padding: clamp(20px, 5vw, 30px);
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    max-width: 90%; /* Max width relative to viewport */
+    width: 500px; /* Default width */
+    text-align: center;
+    transform: scale(0.95);
+    transition: transform var(--transition-duration) ease;
+    position:relative; /* For close button positioning */
+    max-height: 90vh; /* Prevent modal exceeding viewport height */
+    overflow-y: auto; /* Allow scrolling if content overflows */
+}
+.modal-overlay.visible .modal-content {
+    transform: scale(1); /* Scale in animation */
+}
+.modal-content h2 {
+    margin-top: 0;
+    color: var(--primary);
+    font-size: var(--font-size-h2);
+    margin-bottom: 1rem;
+}
+.modal-content p {
+    margin-bottom: 1rem;
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+    color: var(--text);
+    text-align: left; /* Align paragraph text left */
+}
+.modal-content button:not(.modal-close-btn) { /* Style for primary action buttons */
+    background-color: var(--secondary);
+    color: white;
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-block;
+    width: auto;
+    margin-top: 1rem;
+}
+.modal-content button:not(.modal-close-btn):hover {
+    opacity: 0.9;
+}
+.modal-close-btn { /* Style for the 'X' close button */
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+    width: 30px; /* Ensure decent click area */
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal-close-btn:hover {
+    color: var(--text);
+}
+
+/* --- Achievement Detail Modal Specific Styles --- */
+.achievement-modal-content { /* Specific content class */
+    width: 450px; /* Slightly narrower */
+    text-align: left; /* Align content left */
+}
+.achievement-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.achievement-modal-header i { /* Icon */
+    font-size: 2.5rem;
+    color: var(--primary);
+    width: 40px; /* Fixed width for alignment */
+    text-align: center;
+}
+.achievement-modal-header i.unlocked { color: var(--secondary); }
+.achievement-modal-header i.locked { color: var(--text-muted); }
+#achievement-modal-title { /* Title */
+    margin: 0;
+    font-size: var(--font-size-h2);
+    color: var(--primary);
+    line-height: 1.2;
+}
+.achievement-modal-status { /* Status text (Locked/Unlocked) */
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: var(--font-size-small);
+}
+.achievement-modal-status.unlocked { color: var(--secondary); }
+.achievement-modal-status.locked { color: var(--accent); }
+#achievement-modal-desc { /* Description */
+    font-size: var(--font-size-base);
+    margin-bottom: 1rem;
+}
+#achievement-modal-flavor { /* Container for flavor parts */
+    margin-bottom: 1rem;
+    padding-left: 1rem;
+    border-left: 3px solid var(--border-color);
+    font-size: var(--font-size-small);
+}
+/* Styling for flavor text parts (Shared with Timeline) */
+#achievement-modal-flavor p,
+.achievement-entry .flavor-text-container p {
+    margin: 0.4em 0; /* Adjust vertical space between paragraphs */
+    padding: 0;
+    line-height: 1.5;
+    position: relative; /* Needed for ::before positioning */
+}
+.flavor-quote {
+    font-style: italic;
+    color: var(--text-muted);
+    /* Removed padding-left and ::before */
+}
+.flavor-tip {
+    font-weight: 500;
+    color: var(--primary);
+    /* Removed padding-left and ::before */
+}
+.flavor-encouragement {
+    color: var(--text);
+    font-weight: normal;
+    /* Removed padding-left and ::before */
+}
+
+.achievement-modal-date { /* Unlock date */
+    font-size: var(--font-size-xsmall);
+    color: var(--text-muted);
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+}
+/* Dark theme adjustments for achievement modal */
+[data-theme="dark"] #achievement-modal-title { color: var(--primary-light); }
+[data-theme="dark"] .achievement-modal-header i.locked { color: var(--text-muted); }
+[data-theme="dark"] #achievement-modal-flavor { border-left-color: var(--border-color); } /* Keep container border */
+[data-theme="dark"] .flavor-quote { color: var(--text-muted); }
+/* [data-theme="dark"] .flavor-quote::before { color: var(--text-muted); } */ /* Removed */
+[data-theme="dark"] .flavor-tip { color: var(--primary-light); }
+[data-theme="dark"] .flavor-encouragement { color: var(--text); }
+[data-theme="dark"] .achievement-modal-date { border-top-color: var(--border-color); color: var(--text-muted); }
+
+/* --- Onboarding Modal Styles --- */
+.onboarding-content {
+    width: 550px; /* Wider modal for onboarding */
+    text-align: left;
+}
+.onboarding-content h2 { text-align: center; }
+.onboarding-content p { text-align: left; }
+.onboarding-content .form-group { margin-bottom: 1rem; }
+.onboarding-step { display: none; animation: stepFadeIn 0.5s ease-out forwards; }
+.onboarding-step.active-step { display: block; }
+@keyframes stepFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.step-navigation { display: flex; justify-content: space-between; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+.onboarding-btn { padding: 10px 20px; font-size: 1em; border: none; border-radius: 6px; cursor: pointer; }
+.onboarding-btn.prev { background-color: var(--button-bg); color: var(--button-text); }
+.onboarding-btn.next, .onboarding-btn.save { background-color: var(--secondary); color: white; } /* Use 'save' class for final button */
+.onboarding-btn:hover { opacity: 0.9; }
+.onboarding-content fieldset { border: none; padding: 0; margin: 0; }
+.onboarding-content legend { font-weight: 600; margin-bottom: 0.75rem; padding: 0; font-size: var(--font-size-base); color: var(--primary); }
+.onboarding-content fieldset div { margin-bottom: 0.75rem; }
+.onboarding-content input[type="radio"] { margin-right: 0.5rem; accent-color: var(--primary); vertical-align: middle; margin-top: -0.1em; }
+.onboarding-content fieldset label { display: inline-block; font-weight: normal; vertical-align: middle; max-width: calc(100% - 25px); cursor: pointer; }
+.onboarding-content fieldset label strong { display: block; font-weight: 600; color: var(--text); }
+[data-theme="dark"] .onboarding-content legend { color: var(--primary-light); }
+[data-theme="dark"] .onboarding-content fieldset label strong { color: var(--text); }
+
+/* --- Onboarding Step 5 & Settings: Pillar Selection Grid --- */
+.pillar-checkbox-grid { /* Used by onboarding and settings */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    max-height: 40vh; /* Limit height and allow scroll */
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--background);
+}
+.pillar-checkbox-item {
+    display: block; /* Stack label and description */
+    position: relative;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--card-bg);
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: background-color 0.2s, border-color 0.2s;
+    cursor: pointer; /* Make the whole item clickable */
+}
+.pillar-checkbox-item:has(input:checked) { /* Style when checkbox inside is checked */
+    background-color: color-mix(in srgb, var(--secondary) 10%, var(--card-bg));
+    border-color: color-mix(in srgb, var(--secondary) 50%, var(--border-color));
+}
+[data-theme="dark"] .pillar-checkbox-item:has(input:checked) {
+    background-color: color-mix(in srgb, var(--secondary) 15%, var(--card-bg));
+    border-color: color-mix(in srgb, var(--secondary) 60%, var(--border-color));
+}
+.pillar-checkbox-item input[type="checkbox"] {
+    margin: 0 0.5rem 0 0;
+    flex-shrink: 0;
+    accent-color: var(--secondary);
+    width: 1.1em;
+    height: 1.1em;
+    vertical-align: middle;
+}
+.pillar-checkbox-item label { /* Label containing emoji and name */
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.2em; /* Space below label */
+}
+.pillar-checkbox-item label span:first-child { /* Emoji span */
+    display: inline-block;
+    width: 1.2em;
+    text-align: center;
+}
+.pillar-description-onboarding { /* Pillar description text (Only in Onboarding) */
+    display: block;
+    font-size: var(--font-size-xsmall);
+    color: var(--text-muted);
+    padding-left: 2.2em; /* Indent description */
+    margin-top: 0;
+    line-height: 1.3;
+    font-style: italic;
+    opacity: 0.9;
+}
+.pillar-selection-info { /* Counter text (Selected: X / Y) */
+    text-align: center;
+    font-size: var(--font-size-small);
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+/* Style for mismatch counter */
+.pillar-selection-info.count-mismatch {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* --- Settings Modal Specific Styles --- */
+.settings-modal-content {
+    width: 550px; /* Match onboarding width */
+    text-align: left;
+}
+.settings-modal-content h2 { text-align: center; }
+.settings-modal-content fieldset { border: none; padding: 0; margin: 0; }
+.settings-modal-content legend { font-weight: 600; margin-bottom: 0.75rem; padding: 0; font-size: var(--font-size-base); color: var(--primary); }
+.settings-modal-content fieldset div { margin-bottom: 0.75rem; }
+.settings-modal-content input[type="radio"] { margin-right: 0.5rem; accent-color: var(--primary); vertical-align: middle; margin-top: -0.1em; }
+.settings-modal-content fieldset label { display: inline-block; font-weight: normal; vertical-align: middle; max-width: calc(100% - 25px); cursor: pointer; }
+.settings-modal-content fieldset label strong { display: block; font-weight: 600; color: var(--text); }
+[data-theme="dark"] .settings-modal-content legend { color: var(--primary-light); }
+[data-theme="dark"] .settings-modal-content fieldset label strong { color: var(--text); }
+#settings-pillar-checklist { max-height: 25vh; /* Slightly smaller scroll area */ }
+#settings-planner-toggle-container label.checkbox-label { /* Style for the planner toggle label */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+#settings-planner-toggle-container input[type="checkbox"] {
+    accent-color: var(--primary);
+    width: 1.2em;
+    height: 1.2em;
+}
+#save-settings-btn {
+    width: 100%;
+    background-color: var(--secondary);
+    color: white;
+}
+.change-button { /* Style for the 'Change Pillars' button */
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    padding: 6px 10px;
+    font-size: var(--font-size-small);
+}
+.change-button:hover {
+    background-color: var(--button-hover-bg);
+    color: var(--button-hover-text);
+}
+/* Style for disabled simple mode controls */
+.controls-disabled input,
+.controls-disabled label {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+.controls-disabled .pillar-checkbox-item {
+    pointer-events: none; /* Prevent clicking items when disabled */
+}
+
+/* Data management section within settings */
+.settings-data-management {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+.settings-data-management h4 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: var(--primary);
+}
+[data-theme="dark"] .settings-data-management h4 { color: var(--primary-light); }
+.settings-data-management p small {
+    display: block;
+    margin-bottom: 1rem;
+    color: var(--text-muted);
+}
+
+/* --- General Form Group Styling (used in modals, planner) --- */
+.form-group {
+    margin-bottom: 1.25rem;
+    text-align: left; /* Align labels left */
+}
+.form-group label:not(.checkbox-label) { /* Exclude checkbox labels from block display */
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: var(--font-size-small);
+}
+.form-group input[type="text"],
+.form-group input[type="date"], /* If used */
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: var(--font-size-base);
+    background-color: var(--background);
+    color: var(--text);
+    transition: border-color var(--transition-duration), box-shadow var(--transition-duration);
+}
+.form-group input[type="text"]:focus,
+.form-group input[type="date"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+    outline: none;
+}
+.form-group small { /* Help text below inputs */
+    display: block;
+    margin-top: 0.3rem;
+    font-size: var(--font-size-xsmall);
+    color: var(--text-muted);
+    opacity: 0.9;
+}
+/* Specific button style for name prompt */
+#name-prompt-modal #save-name-btn {
+    width: 100%;
+    padding: 12px 20px;
+}
+
+/*==============================
+  Global Guide / Footer
+==============================*/
+.global-guide {
+    position: fixed; /* Stick to bottom */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--guide-bg);
+    border-top: 1px solid var(--border-color);
+    z-index: 100; /* Above main content, below modals */
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+    flex-shrink: 0; /* Prevent guide from shrinking */
+}
+.guide-toggle { /* Button to toggle the guide */
+    width: 100%;
+    padding: 12px 20px;
+    background: var(--primary); /* Use primary color */
+    color: white;
+    border: none;
+    font-size: 1em;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    text-align: left;
+}
+.guide-toggle .toggle-arrow {
+    transition: transform var(--transition-duration) ease-out;
+    display: inline-block;
+    font-weight: bold;
+}
+.guide-toggle[aria-expanded="true"] .toggle-arrow {
+    transform: rotate(180deg); /* Flip arrow when expanded */
+}
+.guide-content { /* Container for guide sections */
+    max-height: 0; /* Collapsed by default */
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+    padding: 0 20px; /* No padding when collapsed */
+    background: var(--guide-bg);
+}
+.guide-content.expanded { /* Styles when expanded */
+    max-height: 50vh; /* Limit height */
+    overflow-y: auto; /* Allow scrolling */
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-top: 1px solid var(--border-color);
+}
+.guide-content-inner { /* Inner padding for content */
+    padding-left: 20px;
+    padding-right: 20px;
+}
+.guide-section { /* Individual section within the guide */
+    margin: 15px 0;
+    padding: 15px;
+    background: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+.guide-section h3 { margin-top: 0; margin-bottom: 10px; color: var(--primary); }
+.guide-section p, .guide-section li { font-size: var(--font-size-small); line-height: 1.5; margin-bottom: 5px; color: var(--text); }
+.guide-section ul { padding-left: 20px; margin-top: 5px; }
+.data-actions { /* Container for export/import buttons */
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+.data-btn { /* Export/Import button style */
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity var(--transition-duration);
+    font-size: 0.9em;
+    text-decoration: none; /* For potential <a> tags */
+    display: inline-block;
+}
+.data-btn:hover { opacity: 0.9; }
+.support-btn { /* Specific style for support button */
+    background-color: #FF5E5B !important; /* Use !important carefully if needed */
+}
+
+/*==============================
+  Toast Notifications
+==============================*/
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1200; /* Above modals */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none; /* Allow clicks through container */
+    max-width: 300px; /* Limit width */
+}
+.toast {
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transform: translateX(100%); /* Start off-screen */
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    font-size: var(--font-size-small);
+    pointer-events: auto; /* Allow interaction with toast itself */
+}
+.toast.show { /* State when visible */
+    opacity: 1;
+    transform: translateX(0);
+}
+.toast.success { background-color: var(--toast-success-bg); }
+.toast.error { background-color: var(--toast-error-bg); }
+.toast.info { background-color: var(--toast-info-bg); }
+
+/*==============================
+  Collapsible Section Styles (Planner & Guide)
+==============================*/
+.collapsible-section {
+    margin: 25px 0;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--collapsible-bg);
+    overflow: hidden; /* Clip content during transition */
+}
+
+.collapsible-trigger { /* Button to toggle */
+    width: 100%;
+    padding: 12px 20px;
+    background: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    font-size: 1em;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    border-radius: 0; /* No radius for trigger button */
+}
+.collapsible-trigger:hover {
+    background: var(--button-hover-bg);
+    color: var(--button-hover-text);
+}
+.collapsible-trigger .toggle-arrow {
+    transition: transform var(--transition-duration) ease-out;
+    display: inline-block;
+    font-weight: bold;
+}
+.collapsible-trigger[aria-expanded="true"] .toggle-arrow {
+    transform: rotate(180deg); /* Flip arrow */
+}
+
+.collapsible-content { /* Content area */
+    max-height: 0; /* Collapsed by default */
+    overflow: hidden;
+    padding: 0 20px; /* No vertical padding when collapsed */
+    transition: var(--collapsible-transition);
+    opacity: 0;
+    border-top: 1px solid transparent; /* Prepare border */
+    /* Prevent interaction when hidden */
+    visibility: hidden;
+}
+
+/* Styles for Collapsible Content (Expanded State) */
+.collapsible-trigger[aria-expanded="true"] + .collapsible-content {
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Stack children vertically */
+    max-height: 1000px; /* Large max-height for content */
+    padding-top: 20px;
+    padding-bottom: 20px;
+    opacity: 1;
+    visibility: visible; /* Make visible */
+    border-top-color: var(--border-color); /* Show top border */
+    overflow: visible; /* Allow children overflow (like scrollable list) */
+}
+
+/*==============================
+  Habit Planner Styles
+==============================*/
+#habit-plan-form {
+   flex-shrink: 0; /* Prevent form from shrinking in flex container */
+   margin-top: 0; /* Remove default top margin */
+   padding-bottom: 1.5rem; /* Space below form */
+   border-bottom: 1px solid var(--border-color); /* Separator */
+   margin-bottom: 1.5rem; /* Space between form and list */
+}
+#habit-plan-form fieldset {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0; /* Add vertical margin */
+}
+#habit-plan-form legend {
+    font-weight: 500;
+    padding: 0 0.5rem;
+    font-size: var(--font-size-small);
+    color: var(--text-muted);
+}
+#habit-plan-form fieldset div { margin-bottom: 0.5rem; }
+#habit-plan-form fieldset div:last-child { margin-bottom: 0; }
+#habit-plan-form input[type="radio"] { margin-right: 0.5rem; accent-color: var(--primary); vertical-align: middle; }
+#habit-plan-form label[for^="plan-type-"] { display: inline; font-weight: normal; color: var(--text); font-size: var(--font-size-base); vertical-align: middle; cursor: pointer; }
+#habit-plan-form #save-habit-plan-btn { width: 100%; background-color: var(--secondary); padding: 12px 20px; margin-top: 1rem; }
+#habit-plan-form #save-habit-plan-btn:hover { background-color: color-mix(in srgb, var(--secondary) 85%, black); }
+#habit-plan-form #delete-habit-plan-btn { width: 100%; background-color: var(--accent); padding: 10px 20px; margin-top: 0.5rem; color: white; }
+#habit-plan-form #delete-habit-plan-btn:hover { background-color: color-mix(in srgb, var(--accent) 85%, black); }
+
+/* Styles for Saved Plans Display Area */
+#saved-plans-display h4 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--primary);
+    font-size: var(--font-size-h3);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+[data-theme="dark"] #saved-plans-display h4 { color: var(--primary-light); }
+
+.saved-plans-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.saved-plan-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Align items to top */
+    gap: 1rem;
+    padding: 0.75rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+[data-theme="dark"] .saved-plan-item {
+     background-color: var(--background); /* Use main background for contrast */
+     border-color: var(--border-color);
+}
+
+.plan-details { flex-grow: 1; }
+.plan-pillar-info {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: var(--font-size-base);
+    display: inline-flex; /* Allow wrapping */
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.25em; /* Space between emoji/text */
+    margin-bottom: 0.3rem;
+    line-height: 1.3;
+}
+[data-theme="dark"] .plan-pillar-info { color: var(--primary-light); }
+.plan-description { font-size: var(--font-size-small); color: var(--text); line-height: 1.5; margin: 0; }
+.plan-description strong { color: var(--text-muted); }
+.plan-actions { display: flex; gap: 0.5rem; flex-shrink: 0; align-items: center; /* Align buttons vertically */ }
+.plan-list-btn { padding: 4px 8px; font-size: var(--font-size-xsmall); border-radius: 4px; min-width: 50px; }
+.edit-plan-btn { background-color: var(--button-bg); color: var(--button-text); }
+.edit-plan-btn:hover { background-color: var(--button-hover-bg); color: var(--button-hover-text); }
+.delete-plan-btn { background-color: var(--accent); color: white; }
+.delete-plan-btn:hover { background-color: color-mix(in srgb, var(--accent) 85%, black); }
+
+/* Style for the container holding the radio button, label, and tooltip icon */
+.plan-type-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    position: relative; /* For tooltip positioning */
+}
+.plan-type-option label {
+    cursor: pointer;
+    flex-grow: 1; /* Allow label to take space */
+}
+.small-info-icon { /* Smaller info icon for planner */
+    width: 16px;
+    height: 16px;
+    font-size: 0.65em;
+    padding: 0;
+    line-height: 14px; /* Adjust for smaller size */
+    flex-shrink: 0;
+}
+.tooltip-container.inline-tooltip { /* Specific container for inline tooltips */
+    display: inline-flex; /* Keep inline */
+    align-items: center;
+    position: relative;
+    margin-left: 0.25rem;
+}
+.tooltip-text { /* General tooltip text style (used by planner tooltips) */
+    position: absolute;
+    background-color: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: var(--font-size-xsmall);
+    text-align: left;
+    white-space: normal; /* Allow text wrapping */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    z-index: 100; /* Above other elements */
+    min-width: 200px;
+    max-width: 280px;
+    /* Visibility handled by hover/focus */
+    visibility: hidden;
+    opacity: 0;
+    transition: var(--tooltip-transition);
+    pointer-events: none;
+}
+.tooltip-text.right-tooltip { /* Position tooltip to the right */
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(5px);
+    margin-left: 5px;
+}
+/* Show tooltip on hover/focus of the container/icon */
+.tooltip-container:hover .tooltip-text,
+.tooltip-container .info-icon:focus + .tooltip-text,
+.tooltip-container:focus-within .tooltip-text { /* Added focus-within */
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* --- Styles for Scrollable Saved Plans Display --- */
+#saved-plans-display {
+    max-height: 300px; /* Limit height */
+    overflow-y: auto; /* Enable vertical scroll */
+    padding: 0.5rem; /* Padding inside the scroll area */
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--background); /* Slightly different background */
+    margin-top: 1.5rem; /* Space above the list */
+    flex-shrink: 1; /* Allow shrinking if needed */
+    flex-grow: 0; /* Don't grow unnecessarily */
+    min-height: 50px; /* Ensure it's visible even when empty */
+}
+#saved-plans-display .saved-plans-list {
+    margin: 0; /* Remove default list margin */
+    padding-right: 0.5rem; /* Space for scrollbar */
+}
+/* Custom Scrollbar Styles (Webkit) */
+#saved-plans-display::-webkit-scrollbar { width: 8px; }
+#saved-plans-display::-webkit-scrollbar-track { background: var(--background); border-radius: 4px; }
+#saved-plans-display::-webkit-scrollbar-thumb { background-color: var(--text-muted); border-radius: 4px; border: 2px solid var(--background); }
+#saved-plans-display::-webkit-scrollbar-thumb:hover { background-color: var(--primary); }
+/* Custom Scrollbar Styles (Firefox) */
+#saved-plans-display { scrollbar-width: thin; scrollbar-color: var(--text-muted) var(--background); }
+
+/*==============================
+  Responsive Adjustments
+==============================*/
+@media (max-width: 768px) {
+    /* Adjust grid for stats dashboard on medium screens */
+    .stats-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+}
+
+@media (max-width: 480px) {
+    /* General adjustments for small screens */
+    .container { padding: 10px; padding-bottom: 80px; } /* Less padding */
+    .guide-toggle { font-size: 0.9em; padding: 10px 15px; }
+    .tab-button { font-size: 0.85em; padding: 8px 10px; }
+    .date-text { font-size: 1em; }
+    .pillar-grid { grid-template-columns: 1fr 1fr; gap: 10px; } /* Force 2 columns */
+    .pillar-card { padding: 12px; min-height: 140px; }
+    .tooltip-container { height: 16px; }
+    .info-icon { width: 16px; height: 16px; font-size: 0.6em;}
+    .mood-option { font-size: clamp(1.6rem, 8vw, 2rem); }
+    .add-note-form textarea { min-height: 60px; }
+    #toast-container { right: 10px; bottom: 10px; left: 10px; width: auto; max-width: calc(100% - 20px); } /* Full width toasts */
+    .toast { max-width: none; }
+    .calendar { gap: 3px; }
+    .calendar-day { min-height: 50px; padding: 4px; font-size: var(--font-size-xsmall); } /* Smaller calendar days */
+    .calendar-day .day-number { font-size: 0.85em; }
+    .pillar-block { width: 5px; height: 5px; }
+    .nav-tabs { gap: 5px; }
+    .modal-content { width: 95%; padding: 15px; } /* Wider modals */
+    :root { --chart-label-size: 8px; --chart-data-point-radius: 4px; --chart-data-point-hover-radius: 5px; }
+    .chart-legend-list { min-width: 100px; font-size: var(--font-size-xsmall); } /* Smaller legend */
+    #achievement-board-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; } /* Ensure 2 columns */
+    .achievement-card .icon-container i { font-size: 2rem; }
+    .timeline-controls { gap: 0.5rem; flex-direction: column; align-items: stretch; } /* Stack controls */
+    .timeline-controls select { min-width: 100%; }
+    .stats-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.75rem; } /* Adjust stats grid */
+    .stat-card { padding: 0.75rem; min-height: 80px; }
+    .stat-value { font-size: clamp(1.1rem, 3.5vw, 1.3rem); }
+    .modal-content .form-group { margin-bottom: 1rem; }
+    .modal-content input[type="text"] { padding: 8px 10px; }
+    .modal-content button:not(.modal-close-btn) { padding: 10px 15px; }
+    .collapsible-trigger { padding: 10px 15px; font-size: 0.95em; }
+    .collapsible-trigger[aria-expanded="true"] + .collapsible-content { padding: 15px; }
+    #habit-plan-form label[for^="plan-type-"] { font-size: var(--font-size-small); }
+    .saved-plan-item { flex-direction: column; align-items: stretch; gap: 0.5rem; } /* Stack plan details/actions */
+    .plan-actions { justify-content: flex-end; }
+    .plan-list-btn { padding: 6px 10px; }
+    .onboarding-content { width: 95%; } /* Wider onboarding modal */
+    .settings-modal-content { width: 95%; } /* Wider settings modal */
+    .step-navigation { flex-direction: column; gap: 0.5rem; } /* Stack onboarding buttons */
+    .onboarding-btn { width: 100%; }
+    .pillar-checkbox-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+    .tooltip-text.right-tooltip { /* Adjust planner tooltip position */
+        left: auto;
+        right: 100%;
+        transform: translateY(-50%) translateX(-5px); /* Move left */
+        margin-left: 0;
+        margin-right: 5px;
+    }
+    /* Responsive Header Layout */
+    .app-header {
+        flex-direction: row; /* Keep row layout */
+        gap: 5px;
+        margin-bottom: 1rem;
+        justify-content: space-between; /* Ensure space between sides */
+    }
+    .title-slogan-wrapper {
+        align-items: center; /* Center align the title block */
+        text-align: center; /* Center text within the block */
+        margin: 0 5px; /* Reduced margin */
+    }
+    .logo-title-line {
+        justify-content: center; /* Center logo and title within their line */
+        /* align-items: center; */ /* Already set */
+    }
+    .slogan {
+        padding-left: 0; /* Remove fixed padding */
+        text-align: center; /* Center slogan text */
+        width: 100%; /* Allow slogan to take full width */
+    }
+    .header-controls {
+        /* gap: 0.5rem; */ /* Already set */
+    }
+    .icon-toggle { width: 36px; height: 36px; font-size: 1em; }
+}
