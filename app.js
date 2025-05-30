@@ -2,8 +2,13 @@
 
 /**
  * Main application logic for WellSpring.
- * ... (other comments)
- * *** MODIFIED: Added client-side notification reminder logic. ***
+ * Initializes the app, sets up event listeners, and coordinates interactions
+ * between the state, UI modules, and other logic components.
+ * *** MODIFIED: Added Service Worker registration. ***
+ * *** MODIFIED: Added Edit/Delete functionality for timeline notes. ***
+ * *** MODIFIED: Improved feedback for adding notes by scrolling timeline to top. ***
+ * *** MODIFIED: Added basic GA4 event tracking. ***
+ * *** MODIFIED: Added Notification permission logic and client-side reminders. ***
  */
 
 // --- Core Modules ---
@@ -22,10 +27,9 @@ import {
 import { checkAchievements } from './achievementlogic.js';
 import { exportData, setupImportListener } from './datamanagement.js'; // exportData calls setLastDataExportTime
 import { initializeAudio, playSound, handleInteractionForAudio } from './audio.js';
-import { findFirstUsageDate, getWeekNumber, calculateLevelData, escapeHtml } from './utils.js';
+import { findFirstUsageDate, getWeekNumber, calculateLevelData, escapeHtml, formatDate } from './utils.js'; // Added formatDate
 
 // --- UI Modules ---
-// ... (all existing UI module imports)
 import { initTheme, toggleTheme, updateAudioToggleButton, showToast, showTab, updateUIVisibilityForMode } from './ui/globalUI.js';
 import { refreshDailyLogUI, handlePillarClick, handleMoodClick, deselectMood, resetDateDisplay } from './ui/dailyLogUI.js';
 import { renderCalendar } from './ui/calendarUI.js';
@@ -37,6 +41,7 @@ import { showWelcomeMessage, showNamePromptModal, closeNamePromptModal, closeWel
 import { showOnboardingModal, hideOnboardingModal, goToOnboardingStep, updatePillarSelectionCounter, populateOnboardingPillarList } from './ui/onboardingUI.js';
 import { toggleCollapsibleSection, closeGuide } from './ui/collapsibleUI.js';
 import { showDatePicker } from './ui/datePickerUI.js';
+// Ensure settingsUI functions are correctly imported, especially showSettingsModal
 import { showSettingsModal as uiShowSettingsModal, hideSettingsModal, updateSettingsModalVisibility, updateSettingsPillarCounter, enableSimpleModeEditing } from './ui/settingsUI.js';
 
 
@@ -52,7 +57,6 @@ const DAYS_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
 
 // --- State ---
-// ... (existing state variables) ...
 let saveTimeoutId = null;
 let currentAnalyticsView = 'stats';
 let touchStartX = 0;
@@ -62,72 +66,100 @@ let touchEndY = 0;
 
 
 // --- GA4 Event Tracking Helper ---
-// ... (trackGAEvent function) ...
 function trackGAEvent(eventName, eventParams = {}) {
     if (typeof gtag === 'function') {
         gtag('event', eventName, eventParams);
-        console.log(`[GA4] Event tracked: ${eventName}`, eventParams);
+        // console.log(`[GA4] Event tracked: ${eventName}`, eventParams); // Keep for debugging if needed
     } else {
-        console.warn(`[GA4] gtag function not found. Event not tracked: ${eventName}`);
+        // console.warn(`[GA4] gtag function not found. Event not tracked: ${eventName}`); // Keep for debugging
     }
 }
 
 // --- Notification Helper Functions ---
 function updateNotificationPermissionStatusDisplay() {
-    // ... (existing function)
     const statusEl = document.getElementById('notification-permission-status');
     const enableBtn = document.getElementById('enable-notifications-btn');
-    if (!statusEl || !enableBtn) return;
+    if (!statusEl || !enableBtn) {
+        return;
+    }
+
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
         statusEl.textContent = 'Status: Reminders not supported by this browser.';
         statusEl.style.color = 'var(--accent)';
-        enableBtn.disabled = true; enableBtn.textContent = 'Not Supported'; return;
+        enableBtn.disabled = true;
+        enableBtn.textContent = 'Not Supported';
+        return;
     }
+
     switch (Notification.permission) {
         case 'granted':
             statusEl.textContent = 'Status: Reminders Enabled.';
             statusEl.style.color = 'var(--secondary)';
-            enableBtn.textContent = 'Reminders Active'; enableBtn.disabled = true; break;
+            enableBtn.textContent = 'Reminders Active';
+            enableBtn.disabled = true;
+            break;
         case 'denied':
             statusEl.textContent = 'Status: Reminders Blocked by browser.';
             statusEl.style.color = 'var(--accent)';
-            enableBtn.textContent = 'Enable Reminders (Blocked)'; enableBtn.disabled = true; break;
-        default:
+            enableBtn.textContent = 'Enable Reminders (Blocked)';
+            enableBtn.disabled = true;
+            break;
+        default: // 'default' (i.e., not yet asked)
             statusEl.textContent = 'Status: Reminders Not Yet Enabled.';
             statusEl.style.color = 'var(--text-muted)';
-            enableBtn.textContent = 'Enable Reminders'; enableBtn.disabled = false; break;
+            enableBtn.textContent = 'Enable Reminders';
+            enableBtn.disabled = false;
+            break;
     }
 }
 
 async function requestNotificationPermission() {
-    // ... (existing function)
     handleInteractionForAudio();
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
         showToast("This browser does not support notifications.", "error");
-        playSound('error'); updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_attempt', { supported: false }); return null;
+        playSound('error');
+        updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_attempt', { supported: false });
+        return null;
     }
+
     if (Notification.permission === 'granted') {
         showToast("Reminders are already enabled!", "info");
-        updateNotificationPermissionStatusDisplay(); return 'granted';
+        updateNotificationPermissionStatusDisplay();
+        return 'granted';
     }
+
     if (Notification.permission === 'denied') {
         showToast("Reminders are blocked. Please enable them in your browser/OS settings.", "error");
-        playSound('error'); updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_blocked_interaction'); return 'denied';
+        playSound('error');
+        updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_blocked_interaction');
+        return 'denied';
     }
+
     try {
         const permission = await Notification.requestPermission();
         trackGAEvent('notification_permission_requested', { permission_status: permission });
-        if (permission === 'granted') { showToast("Great! Reminders enabled.", "success"); playSound('save'); }
-        else if (permission === 'denied') { showToast("Reminders permission denied. You can change this in browser settings.", "info"); playSound('click'); }
-        else { showToast("Reminder permission not granted (prompt dismissed).", "info"); playSound('click'); }
-        updateNotificationPermissionStatusDisplay(); return permission;
+
+        if (permission === 'granted') {
+            showToast("Great! Reminders enabled.", "success");
+            playSound('save');
+        } else if (permission === 'denied') {
+            showToast("Reminders permission denied. You can change this in browser settings.", "info");
+            playSound('click');
+        } else {
+            showToast("Reminder permission not granted (prompt dismissed).", "info");
+            playSound('click');
+        }
+        updateNotificationPermissionStatusDisplay();
+        return permission;
     } catch (error) {
         console.error("[App] Error requesting notification permission:", error);
         showToast("Could not request notification permission.", "error");
-        playSound('error'); updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_error'); return 'error';
+        playSound('error');
+        updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_error');
+        return 'error';
     }
 }
 
@@ -140,16 +172,19 @@ async function requestNotificationPermission() {
 async function showLocalNotification(title, options) {
     if (!('Notification' in window) || !('serviceWorker' in navigator) || Notification.permission !== 'granted') {
         console.warn("[App] Cannot show local notification: Not supported or permission not granted.");
+        if (Notification.permission !== 'granted') {
+            console.log("[App] Notification permission is: " + Notification.permission);
+        }
         return;
     }
     try {
-        const registration = await navigator.serviceWorker.ready; // Get the active SW registration
+        const registration = await navigator.serviceWorker.ready;
         await registration.showNotification(title, options);
         console.log(`[App] Local notification shown: "${title}"`);
         trackGAEvent('local_notification_shown', { title: title, tag: options.tag });
     } catch (error) {
         console.error("[App] Error showing local notification:", error);
-        trackGAEvent('local_notification_error', { error_message: error.message });
+        trackGAEvent('local_notification_error', { error_message: String(error) });
     }
 }
 // --- END NEW: Show Local Notification Function ---
@@ -161,28 +196,26 @@ async function showLocalNotification(title, options) {
  */
 function checkAndShowBackupReminder() {
     const state = getState();
-    if (!state.isOnboardingComplete) return; // Don't show reminders during onboarding
+    if (!state.isOnboardingComplete || Notification.permission !== 'granted') return;
 
     const lastReminderTime = state.lastBackupReminderShown ? new Date(state.lastBackupReminderShown).getTime() : 0;
     const lastExportTime = state.lastDataExportTime ? new Date(state.lastDataExportTime).getTime() : 0;
-    const relevantLastTime = Math.max(lastReminderTime, lastExportTime); // Consider the latest of these two
+    const relevantLastTime = Math.max(lastReminderTime, lastExportTime);
     const now = new Date().getTime();
     const daysSinceLastRelevant = (now - relevantLastTime) / DAYS_IN_MILLISECONDS;
 
     const totalSavedDays = Object.keys(state.savedDays || {}).length;
 
     if (totalSavedDays >= MIN_SAVED_DAYS_FOR_BACKUP_REMINDER && daysSinceLastRelevant >= BACKUP_REMINDER_INTERVAL_DAYS) {
-        console.log("[App] Backup reminder conditions met.");
+        console.log("[App] Backup reminder conditions met. Attempting to show notification.");
         showLocalNotification('WellSpring Backup Reminder', {
-            body: `It's been a while! Consider backing up your WellSpring data to keep it safe.`,
-            icon: 'assets/favicon.png', // Use your app icon
+            body: `It's been about ${BACKUP_REMINDER_INTERVAL_DAYS} days. Consider backing up your WellSpring data to keep it safe!`,
+            icon: 'assets/favicon.png',
             badge: 'assets/favicon.png',
-            tag: 'wellspring-backup-reminder', // So it replaces any existing backup reminder
-            data: { url: '/' } // Opens the app on click
+            tag: 'wellspring-backup-reminder',
+            data: { url: './index.html#settings-modal' } // Link to open settings or a specific part of it
         });
         setLastBackupReminderShown(); // Update state that reminder was shown
-    } else {
-        // console.log("[App] Backup reminder conditions not met.", {totalSavedDays, daysSinceLastRelevant});
     }
 }
 
@@ -191,32 +224,28 @@ function checkAndShowBackupReminder() {
  */
 function checkAndShowMissedDayReminder() {
     const state = getState();
-    if (!state.isOnboardingComplete || !state.savedDays) return;
+    if (!state.isOnboardingComplete || Notification.permission !== 'granted' || !state.savedDays) return;
 
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const yesterdayString = yesterday.toISOString().split('T')[0];
 
-    // Don't show if yesterday was already saved or if it's the user's very first day (currentDate = yesterday)
-    if (!state.savedDays[yesterdayString] && state.currentDate !== yesterdayString) {
-        // Check if it's reasonable to remind (e.g., not too far in the past - this is a simple check)
-        // More complex logic could be added if needed.
-        const firstUsage = findFirstUsageDate(state);
-        if (firstUsage && yesterdayString < firstUsage) {
-            // Don't remind for days before the app was first used.
-            return;
-        }
+    const firstUsage = findFirstUsageDate(state);
+    if (firstUsage && yesterdayString < firstUsage) {
+        return; // Don't remind for days before the app was first used.
+    }
 
-        console.log(`[App] Missed day reminder conditions met for ${yesterdayString}.`);
+    // Don't show if yesterday was saved OR if current view is already yesterday (user might be actively logging it)
+    if (!state.savedDays[yesterdayString] && state.currentDate !== yesterdayString) {
+        console.log(`[App] Missed day reminder conditions met for ${yesterdayString}. Attempting to show notification.`);
         showLocalNotification('WellSpring Catch-up', {
-            body: `Looks like you might have missed logging for ${escapeHtml(formatDate(yesterdayString))}. Log it now?`,
+            body: `Did you forget to log for ${escapeHtml(formatDate(yesterdayString))}? Tap to log now!`,
             icon: 'assets/favicon.png',
             badge: 'assets/favicon.png',
-            tag: 'wellspring-missed-day-reminder',
-            data: { url: `/?date=${yesterdayString}` } // Direct link to that day
+            tag: 'wellspring-missed-day-reminder-' + yesterdayString, // Unique tag per day
+            data: { url: `./index.html?date=${yesterdayString}` }
         });
-        // We don't set a "shown" timestamp for this as it's a one-off for that specific missed day.
     }
 }
 // --- END NEW: Reminder Logic Functions ---
@@ -229,7 +258,7 @@ function init() {
     loadState();
     initTheme();
     initializeAudio();
-    registerServiceWorker();
+    registerServiceWorker(); // Ensure SW is registered
     updateAudioToggleButton();
     populatePillarSelect();
     setupAutoResizeTextarea();
@@ -243,7 +272,22 @@ function init() {
     trackGAEvent('view_tab', { tab_id: 'daily' });
 
     setupEventListeners();
-    updateNotificationPermissionStatusDisplay();
+    updateNotificationPermissionStatusDisplay(); // Set initial status for notification settings
+
+    // --- START MODIFICATION: Handle ?date=YYYY-MM-DD URL parameter ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const dateParam = urlParams.get('date');
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+        console.log(`[App] Date parameter found in URL: ${dateParam}. Setting current date.`);
+        updateCurrentDate(dateParam); // Update state
+        resetDateDisplay();      // Update header display
+        refreshDailyLogUI();     // Refresh daily log for this date
+        showTab('daily');        // Ensure daily log tab is active
+        // Optional: Clear the URL parameter to avoid re-triggering on refresh if desired
+        // window.history.replaceState({}, document.title, "./index.html");
+    }
+    // --- END MODIFICATION ---
+
 
     if (!initialStateData.isOnboardingComplete) {
         showOnboardingModal();
@@ -255,29 +299,52 @@ function init() {
             trackGAEvent('name_prompt_shown');
         }
         refreshDailyLogUI();
-        // --- START NEW: Check reminders after onboarding is complete and app is ready ---
-        if (Notification.permission === 'granted') {
-            checkAndShowBackupReminder();
-            checkAndShowMissedDayReminder();
-        }
-        // --- END NEW ---
+        // --- START MODIFICATION: Check reminders after onboarding & if permission granted ---
+        // Use a timeout to allow SW registration and permission state to settle.
+        setTimeout(() => {
+            if (Notification.permission === 'granted') {
+                checkAndShowBackupReminder();
+                checkAndShowMissedDayReminder();
+            }
+        }, 2000); // Delay reminder checks slightly
+        // --- END MODIFICATION ---
     }
     checkAchievements(getStateReference());
     setupDebouncedSave();
     console.log("[App] WellSpring Initialization complete.");
 }
 
-// ... (registerServiceWorker, setupDebouncedSave, handleStateChangeForSave, and all other event handlers remain largely the same) ...
-// Make sure to replace the old `init` function with the one above.
-// The `exportData` function in `datamanagement.js` already calls `setLastDataExportTime`.
+// ... (registerServiceWorker, setupDebouncedSave, handleStateChangeForSave) ...
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('[App] Service Worker registered successfully with scope:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('[App] Service Worker registration failed:', error);
+                });
+        });
+    } else {
+        console.warn('[App] Service workers are not supported in this browser.');
+    }
+}
 
-// ... (The rest of your app.js, including all event handlers, setupEventListeners, etc.)
-// For brevity, I'm not repeating all of them, but they should remain as they were in
-// the previous version (wellspring_app_ga4_events_1), with the `init` function replaced.
-// Ensure the `setupEventListeners` function still correctly sets up the listener for the
-// `#enable-notifications-btn` and that `appShowSettingsModal` calls `updateNotificationPermissionStatusDisplay`.
+function setupDebouncedSave() {
+    document.removeEventListener('stateChanged', handleStateChangeForSave);
+    document.addEventListener('stateChanged', handleStateChangeForSave);
+}
 
-// (Make sure the rest of your event handlers and functions from wellspring_app_ga4_events_1 are here)
+function handleStateChangeForSave(e) {
+    if (saveTimeoutId) clearTimeout(saveTimeoutId);
+    saveTimeoutId = setTimeout(() => {
+        saveState(`debouncedSave (trigger: ${e.detail?.action || 'unknown'})`);
+        saveTimeoutId = null;
+    }, SAVE_DELAY);
+}
+
+// ... (Event Handlers: handleDateChangeInput, handleDateArrowChange, etc. - including GA events)
 function handleDateChangeInput(newDateString) {
     handleInteractionForAudio();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateString)) {
@@ -655,7 +722,6 @@ function appShowSettingsModal() {
 }
 
 function setupEventListeners() {
-    // ... (all existing event listeners from wellspring_app_ga4_events_1, including the one for #enable-notifications-btn) ...
     console.log("[App] Setting up event listeners...");
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
         handleInteractionForAudio();
@@ -780,8 +846,8 @@ function setupEventListeners() {
         else if (e.target.classList.contains('delete-plan-btn')) handleDeleteHabitPlan(planId);
     });
     document.getElementById('delete-habit-plan-btn')?.addEventListener('click', function() { const planIdInput = document.getElementById('habit-plan-id'); if (planIdInput?.value) handleDeleteHabitPlan(planIdInput.value); });
-    document.getElementById('export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); trackGAEvent('data_exported'); }); // Export from guide
-    document.getElementById('import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); trackGAEvent('data_import_triggered'); playSound('click', 'D5', '16n'); }); // Import from guide
+    document.getElementById('export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); trackGAEvent('data_exported'); });
+    document.getElementById('import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); trackGAEvent('data_import_triggered'); playSound('click', 'D5', '16n'); });
     document.getElementById('close-settings-modal-btn')?.addEventListener('click', () => { handleInteractionForAudio(); hideSettingsModal(); trackGAEvent('settings_closed'); playSound('click', 'A4', '16n'); });
     document.getElementById('settings-modal')?.addEventListener('click', (e) => { if (e.target.id === 'settings-modal') { handleInteractionForAudio(); hideSettingsModal(); trackGAEvent('settings_closed'); playSound('click', 'A4', '16n'); } });
     document.getElementById('settings-form')?.addEventListener('submit', handleSaveSettings);
@@ -800,9 +866,9 @@ function setupEventListeners() {
         }
     });
     document.getElementById('settings-change-pillars-btn')?.addEventListener('click', () => { handleInteractionForAudio(); enableSimpleModeEditing(); trackGAEvent('settings_change_pillars_clicked'); playSound('click', 'E4', '16n'); });
-    document.getElementById('settings-export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); trackGAEvent('data_exported_from_settings'); }); // Export from settings
-    document.getElementById('settings-import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); trackGAEvent('data_import_triggered_from_settings'); playSound('click', 'D5', '16n'); hideSettingsModal(); }); // Import from settings
-    document.getElementById('enable-notifications-btn')?.addEventListener('click', requestNotificationPermission); // Listener for new button
+    document.getElementById('settings-export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); trackGAEvent('data_exported_from_settings'); });
+    document.getElementById('settings-import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); trackGAEvent('data_import_triggered_from_settings'); playSound('click', 'D5', '16n'); hideSettingsModal(); });
+    document.getElementById('enable-notifications-btn')?.addEventListener('click', requestNotificationPermission);
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             if (document.getElementById('settings-modal')?.classList.contains('visible')) { handleInteractionForAudio(); hideSettingsModal(); trackGAEvent('settings_closed_esc'); }
