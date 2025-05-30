@@ -8,6 +8,7 @@
  * *** MODIFIED: Added Edit/Delete functionality for timeline notes. ***
  * *** MODIFIED: Improved feedback for adding notes by scrolling timeline to top. ***
  * *** MODIFIED: Added basic GA4 event tracking. ***
+ * *** MODIFIED: Added Notification permission logic. ***
  */
 
 // --- Core Modules ---
@@ -37,7 +38,8 @@ import { showWelcomeMessage, showNamePromptModal, closeNamePromptModal, closeWel
 import { showOnboardingModal, hideOnboardingModal, goToOnboardingStep, updatePillarSelectionCounter, populateOnboardingPillarList } from './ui/onboardingUI.js';
 import { toggleCollapsibleSection, closeGuide } from './ui/collapsibleUI.js';
 import { showDatePicker } from './ui/datePickerUI.js';
-import { showSettingsModal, hideSettingsModal, updateSettingsModalVisibility, updateSettingsPillarCounter, enableSimpleModeEditing } from './ui/settingsUI.js';
+// Ensure settingsUI functions are correctly imported, especially showSettingsModal
+import { showSettingsModal as uiShowSettingsModal, hideSettingsModal, updateSettingsModalVisibility, updateSettingsPillarCounter, enableSimpleModeEditing } from './ui/settingsUI.js';
 
 
 // --- Constants ---
@@ -54,11 +56,6 @@ let touchEndX = 0;
 let touchEndY = 0;
 
 // --- GA4 Event Tracking Helper ---
-/**
- * Sends an event to Google Analytics 4.
- * @param {string} eventName - The name of the event (e.g., 'button_click').
- * @param {object} [eventParams={}] - Optional parameters for the event.
- */
 function trackGAEvent(eventName, eventParams = {}) {
     if (typeof gtag === 'function') {
         gtag('event', eventName, eventParams);
@@ -68,12 +65,114 @@ function trackGAEvent(eventName, eventParams = {}) {
     }
 }
 
+// --- Notification Helper Functions ---
+
+/**
+ * Checks and displays the current notification permission status in the settings modal.
+ */
+function updateNotificationPermissionStatusDisplay() {
+    const statusEl = document.getElementById('notification-permission-status');
+    const enableBtn = document.getElementById('enable-notifications-btn');
+    if (!statusEl || !enableBtn) {
+        // console.warn("[App] Notification status/button elements not found in settings for display update.");
+        return;
+    }
+
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        statusEl.textContent = 'Status: Reminders not supported by this browser.';
+        statusEl.style.color = 'var(--accent)';
+        enableBtn.disabled = true;
+        enableBtn.textContent = 'Not Supported';
+        return;
+    }
+
+    switch (Notification.permission) {
+        case 'granted':
+            statusEl.textContent = 'Status: Reminders Enabled.';
+            statusEl.style.color = 'var(--secondary)';
+            enableBtn.textContent = 'Reminders Active';
+            enableBtn.disabled = true;
+            break;
+        case 'denied':
+            statusEl.textContent = 'Status: Reminders Blocked by browser.';
+            statusEl.style.color = 'var(--accent)';
+            enableBtn.textContent = 'Enable Reminders (Blocked)';
+            enableBtn.disabled = true;
+            break;
+        default: // 'default' (i.e., not yet asked)
+            statusEl.textContent = 'Status: Reminders Not Yet Enabled.';
+            statusEl.style.color = 'var(--text-muted)';
+            enableBtn.textContent = 'Enable Reminders';
+            enableBtn.disabled = false;
+            break;
+    }
+}
+
+/**
+ * Requests permission from the user to show notifications.
+ * Updates the UI and tracks the outcome with GA.
+ * @returns {Promise<string|null>} Resolves with the permission status ('granted', 'denied', 'default') or null if not supported.
+ */
+async function requestNotificationPermission() {
+    handleInteractionForAudio();
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        showToast("This browser does not support notifications.", "error");
+        playSound('error');
+        updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_attempt', { supported: false });
+        return null;
+    }
+
+    if (Notification.permission === 'granted') {
+        showToast("Reminders are already enabled!", "info");
+        updateNotificationPermissionStatusDisplay();
+        // No GA event here as it's not a new request outcome
+        return 'granted';
+    }
+
+    if (Notification.permission === 'denied') {
+        showToast("Reminders are blocked. Please enable them in your browser/OS settings.", "error");
+        playSound('error');
+        updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_blocked_interaction');
+        return 'denied';
+    }
+
+    try {
+        const permission = await Notification.requestPermission();
+        trackGAEvent('notification_permission_requested', { permission_status: permission });
+
+        if (permission === 'granted') {
+            showToast("Great! Reminders enabled.", "success");
+            playSound('save');
+            // Future: Attempt to subscribe to push service here if using server-side pushes
+            // For client-side, this grant is enough to allow SW to show local notifications.
+        } else if (permission === 'denied') {
+            showToast("Reminders permission denied. You can change this in browser settings.", "info");
+            playSound('click');
+        } else { // 'default' - user dismissed the prompt
+            showToast("Reminder permission not granted (prompt dismissed).", "info");
+            playSound('click');
+        }
+        updateNotificationPermissionStatusDisplay();
+        return permission;
+    } catch (error) {
+        console.error("[App] Error requesting notification permission:", error);
+        showToast("Could not request notification permission.", "error");
+        playSound('error');
+        updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_error');
+        return 'error'; // Or null, depending on how you want to handle errors
+    }
+}
+
+
 // --- Initialization ---
 function init() {
     console.log("[App] Initializing WellSpring v2...");
     document.body.classList.add('js-loaded');
     loadState();
-    initTheme(); // GA4 config is in index.html, so pageview fires on load
+    initTheme();
     initializeAudio();
     registerServiceWorker();
     updateAudioToggleButton();
@@ -85,11 +184,16 @@ function init() {
     updatePlannerVisibility(initialStateData.showPlanner);
     resetDateDisplay();
     refreshDailyLogUI();
-    showTab('daily'); // Initial tab view, track this
+    showTab('daily');
     trackGAEvent('view_tab', { tab_id: 'daily' });
 
-
     setupEventListeners();
+
+    // Call this when settings modal might be shown or app loads
+    // to set the initial state of the notification permission display.
+    updateNotificationPermissionStatusDisplay();
+
+
     if (!initialStateData.isOnboardingComplete) {
         showOnboardingModal();
         goToOnboardingStep(1);
@@ -108,7 +212,7 @@ function init() {
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
+            navigator.serviceWorker.register('./sw.js') // Ensure path is correct
                 .then(registration => {
                     console.log('[App] Service Worker registered successfully with scope:', registration.scope);
                 })
@@ -135,7 +239,8 @@ function handleStateChangeForSave(e) {
 }
 
 // --- Event Handlers ---
-
+// (handleDateChangeInput, handleDateArrowChange, handleShowDatePicker, handleSaveDay, etc. remain the same)
+// ... All your existing event handlers from the previous app.js version ...
 function handleDateChangeInput(newDateString) {
     handleInteractionForAudio();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateString)) {
@@ -200,7 +305,7 @@ function handleSaveDay() {
         });
         const updatedState = getState();
         const currentPrestige = updatedState.prestige;
-        checkAchievements(getStateReference()); // This might trigger unlockAchievement which has its own GA event
+        checkAchievements(getStateReference());
         refreshDailyLogUI();
         showToast("Day saved successfully!", "success");
         playSound('save', 'E5', '8n');
@@ -251,7 +356,7 @@ function handleAddNote() {
         playSound('error'); return;
     }
     addTimelineEntry({ type: 'note', text: noteText, date: new Date().toISOString() });
-    trackGAEvent('note_added'); // Event for adding a note
+    trackGAEvent('note_added');
     showToast("Note added to timeline.", "success");
     textarea.value = "";
     setupAutoResizeTextarea();
@@ -352,7 +457,7 @@ function handleSaveName(fromOnboarding = false) {
 
 function handleCompleteOnboarding() {
     handleInteractionForAudio();
-    if (!handleSaveName(true)) return; // GA event for name set is in handleSaveName
+    if (!handleSaveName(true)) return;
     const selectedMode = document.querySelector('input[name="onboardingMode"]:checked')?.value || 'full';
     let selectedPillarIds = [], validationPassed = true, simpleModeCount = null;
     if (selectedMode === 'simple') {
@@ -405,7 +510,7 @@ function handleSaveSettings(event) {
         trackGAEvent('settings_saved', {
             mode_changed_to: selectedMode,
             show_planner: showPlannerSetting,
-            name_updated: !!(newName && newName !== getState().userName) // Track if name was actually changed
+            name_updated: !!(newName && newName !== getState().userName)
         });
         updateUIVisibilityForMode(selectedMode);
         updatePlannerVisibility(showPlannerSetting);
@@ -493,7 +598,7 @@ function handleTouchEnd(event) {
             const nextTabButton = tabButtons[nextTabIndex];
             const nextTabId = nextTabButton?.dataset.tab;
             if (nextTabId) {
-                 if (nextTabId === 'calendar') { handleShowCalendarTab(); } // showTab inside handles GA
+                 if (nextTabId === 'calendar') { handleShowCalendarTab(); }
                  else if (nextTabId === 'journey') { renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
                  else if (nextTabId === 'achievements') { renderAchievementBoard(); showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
                  else { showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });}
@@ -504,8 +609,21 @@ function handleTouchEnd(event) {
     touchStartX = 0; touchStartY = 0; touchEndX = 0; touchEndY = 0;
 }
 
+/**
+ * Wrapper function for showing the settings modal that also updates notification status.
+ */
+function appShowSettingsModal() {
+    handleInteractionForAudio();
+    uiShowSettingsModal(); // Call the original imported function
+    updateNotificationPermissionStatusDisplay(); // Update status when modal is shown
+    trackGAEvent('settings_opened');
+    playSound('click', 'B4', '16n');
+}
+
+
 function setupEventListeners() {
     console.log("[App] Setting up event listeners...");
+    // Theme Toggle
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
         handleInteractionForAudio();
         toggleTheme((newTheme) => {
@@ -517,6 +635,8 @@ function setupEventListeners() {
         });
         playSound('click', 'E5', '16n');
     });
+
+    // Audio Toggle
     document.getElementById('audio-toggle')?.addEventListener('click', () => {
         handleInteractionForAudio();
         toggleSoundEnabled();
@@ -525,33 +645,32 @@ function setupEventListeners() {
         trackGAEvent('sound_toggled', { enabled: soundEnabled });
         playSound('click', soundEnabled ? 'C5' : 'C4', '8n');
     });
-    document.getElementById('settings-btn')?.addEventListener('click', () => {
-        handleInteractionForAudio();
-        showSettingsModal();
-        trackGAEvent('settings_opened');
-        playSound('click', 'B4', '16n');
-    });
+
+    // Settings Button Listener - Uses the new appShowSettingsModal
+    document.getElementById('settings-btn')?.addEventListener('click', appShowSettingsModal);
+
+
+    // Tab Navigation
     document.querySelector('.nav-tabs')?.addEventListener('click', (e) => {
         if (e.target.matches('.tab-button')) {
             handleInteractionForAudio();
             const tabId = e.target.dataset.tab;
             if (tabId) {
-                if (tabId === 'calendar') handleShowCalendarTab(); // showTab inside handles GA
+                if (tabId === 'calendar') handleShowCalendarTab();
                 else if (tabId === 'journey') { renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); showTab(tabId); trackGAEvent('view_tab', { tab_id: tabId, source: 'click' }); }
                 else if (tabId === 'achievements') { renderAchievementBoard(); showTab(tabId); trackGAEvent('view_tab', { tab_id: tabId, source: 'click' }); }
                 else { showTab(tabId); trackGAEvent('view_tab', { tab_id: tabId, source: 'click' }); }
             }
         }
     });
+    // ... (rest of date navigation, daily log, journey tab, calendar tab, achievements tab listeners - unchanged) ...
     document.getElementById('prev-day-btn')?.addEventListener('click', () => handleDateArrowChange(-1));
     document.getElementById('next-day-btn')?.addEventListener('click', () => handleDateArrowChange(1));
     document.getElementById('formatted-date')?.addEventListener('click', handleShowDatePicker);
     document.getElementById('hidden-date-input')?.addEventListener('change', (e) => handleDateChangeInput(e.target.value));
     document.getElementById('pillar-inputs')?.addEventListener('click', (e) => {
         const card = e.target.closest('.pillar-card');
-        if (card && !e.target.classList.contains('info-icon')) {
-            handlePillarClick(card); // GA for pillar toggle can be complex, maybe later
-        }
+        if (card && !e.target.classList.contains('info-icon')) handlePillarClick(card);
     });
     document.getElementById('pillar-inputs')?.addEventListener('keydown', (e) => {
         const card = e.target.closest('.pillar-card');
@@ -565,45 +684,26 @@ function setupEventListeners() {
     document.getElementById('lock-button')?.addEventListener('click', handleSaveDay);
     document.getElementById('unlock-button')?.addEventListener('click', handleUnlockDay);
     document.getElementById('add-note-btn')?.addEventListener('click', handleAddNote);
-    document.getElementById('timeline-filter')?.addEventListener('change', (e) => {
-        handleInteractionForAudio(); updateTimelineFilter(e.target.value); renderTimeline();
-        trackGAEvent('timeline_filter_changed', { filter_type: e.target.value });
-        playSound('click', 'D5', '16n');
-    });
-    document.getElementById('timeline-sort')?.addEventListener('change', (e) => {
-        handleInteractionForAudio(); updateTimelineSortOrder(e.target.value); renderTimeline();
-        trackGAEvent('timeline_sort_changed', { sort_order: e.target.value });
-        playSound('click', 'E5', '16n');
-    });
+    document.getElementById('timeline-filter')?.addEventListener('change', (e) => { handleInteractionForAudio(); updateTimelineFilter(e.target.value); renderTimeline(); trackGAEvent('timeline_filter_changed', { filter_type: e.target.value }); playSound('click', 'D5', '16n'); });
+    document.getElementById('timeline-sort')?.addEventListener('change', (e) => { handleInteractionForAudio(); updateTimelineSortOrder(e.target.value); renderTimeline(); trackGAEvent('timeline_sort_changed', { sort_order: e.target.value }); playSound('click', 'E5', '16n'); });
     document.getElementById('prestige-button')?.addEventListener('click', handlePrestigeClick);
     document.getElementById('new-note-textarea')?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddNote(); } });
     document.getElementById('calendar-grid')?.addEventListener('click', (e) => {
         const dayCell = e.target.closest('.calendar-day:not(.disabled)');
-        if (dayCell?.dataset.date) { handleInteractionForAudio(); handleDateChangeInput(dayCell.dataset.date); showTab('daily'); trackGAEvent('view_tab', { tab_id: 'daily', source: 'calendar_click' }); playSound('click', 'E5', '16n'); }
+        if (dayCell?.dataset.date) { handleInteractionForAudio(); handleDateChangeInput(dayCell.dataset.date); showTab('daily'); trackGAEvent('view_tab', { tab_id: 'daily', source: 'calendar_day_click' }); playSound('click', 'E5', '16n'); }
     });
     document.getElementById('prev-month-btn')?.addEventListener('click', () => {handleMonthChange(-1); trackGAEvent('calendar_month_changed', { direction: 'previous'}); });
     document.getElementById('next-month-btn')?.addEventListener('click', () => {handleMonthChange(1); trackGAEvent('calendar_month_changed', { direction: 'next'}); });
-    document.getElementById('view-analytics-btn')?.addEventListener('click', () => {
-         handleInteractionForAudio(); toggleAnalyticsVisibility();
-         trackGAEvent('analytics_visibility_toggled', { visible: document.getElementById("analytics-container").style.display === "block" });
-         playSound('click', 'B4', '16n');
-    });
+    document.getElementById('view-analytics-btn')?.addEventListener('click', () => { handleInteractionForAudio(); toggleAnalyticsVisibility(); trackGAEvent('analytics_visibility_toggled', { visible: document.getElementById("analytics-container").style.display === "block" }); playSound('click', 'B4', '16n'); });
     document.getElementById('analytics-toggles')?.addEventListener('click', (e) => {
         if (e.target.matches('button')) {
             const view = e.target.dataset.view;
-            if (view && view !== currentAnalyticsView) {
-                handleInteractionForAudio(); switchAnalyticsView(view);
-                trackGAEvent('analytics_view_switched', { view_id: view });
-                playSound('click', 'G4', '16n');
-            }
+            if (view && view !== currentAnalyticsView) { handleInteractionForAudio(); switchAnalyticsView(view); trackGAEvent('analytics_view_switched', { view_id: view }); playSound('click', 'G4', '16n'); }
         }
     });
     document.getElementById('achievement-board-grid')?.addEventListener('click', (e) => {
         const card = e.target.closest('.achievement-card');
-        if (card?.dataset.achievementId) {
-            handleInteractionForAudio(); showAchievementModal(card.dataset.achievementId);
-            trackGAEvent('achievement_modal_opened', { achievement_id: card.dataset.achievementId });
-        }
+        if (card?.dataset.achievementId) { handleInteractionForAudio(); showAchievementModal(card.dataset.achievementId); trackGAEvent('achievement_modal_opened', { achievement_id: card.dataset.achievementId }); }
     });
     document.getElementById('achievement-board-grid')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -611,6 +711,8 @@ function setupEventListeners() {
             if (card?.dataset.achievementId) { e.preventDefault(); handleInteractionForAudio(); showAchievementModal(card.dataset.achievementId); trackGAEvent('achievement_modal_opened', { achievement_id: card.dataset.achievementId, source: 'keyboard' });}
         }
     });
+
+    // Modals
     document.getElementById('dismiss-welcome-btn')?.addEventListener('click', () => { handleInteractionForAudio(); closeWelcomeModal(); trackGAEvent('welcome_modal_dismissed'); playSound('save', 'E5', '8n'); });
     document.querySelector('#welcome-modal .modal-close-btn')?.addEventListener('click', () => { handleInteractionForAudio(); closeWelcomeModal(); trackGAEvent('welcome_modal_closed'); playSound('click', 'D4', '16n'); });
     document.getElementById('welcome-modal')?.addEventListener('click', (e) => { if (e.target.id === 'welcome-modal') { handleInteractionForAudio(); closeWelcomeModal(); trackGAEvent('welcome_modal_closed'); playSound('click', 'D4', '16n'); } });
@@ -620,6 +722,8 @@ function setupEventListeners() {
     document.getElementById('name-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveName(false); } });
     document.getElementById('close-achievement-modal-btn')?.addEventListener('click', () => { handleInteractionForAudio(); hideAchievementModal(); trackGAEvent('achievement_modal_closed'); });
     document.getElementById('achievement-detail-modal')?.addEventListener('click', (e) => { if (e.target.id === 'achievement-detail-modal') { handleInteractionForAudio(); hideAchievementModal(); trackGAEvent('achievement_modal_closed'); } });
+
+    // Onboarding Modal
     document.getElementById('onboarding-modal')?.addEventListener('click', (e) => {
         if (e.target.matches('.onboarding-btn')) {
             handleInteractionForAudio();
@@ -652,9 +756,11 @@ function setupEventListeners() {
             else { updatePillarSelectionCounter(checkedCheckboxes.length, requiredCount); playSound('click', 'D4', '16n'); }
         }
     });
+
+    // Collapsible Sections
     document.getElementById('guide-toggle-btn')?.addEventListener('click', function() {
         handleInteractionForAudio();
-        const isExpanding = this.getAttribute('aria-expanded') === 'false'; // State *before* toggle
+        const isExpanding = this.getAttribute('aria-expanded') === 'false';
         toggleCollapsibleSection(this, 'guide-content-area');
         trackGAEvent('guide_toggled', { expanded: isExpanding });
         playSound('click', isExpanding ? 'F#4' : 'F4', '16n');
@@ -666,17 +772,23 @@ function setupEventListeners() {
         trackGAEvent('planner_toggled', { expanded: isExpanding });
         playSound('click', isExpanding ? 'F#4' : 'F4', '16n');
     });
+
+    // Habit Planner Form & List
     document.getElementById('habit-plan-form')?.addEventListener('submit', handleSaveHabitPlan);
     ['habit-plan-activity', 'habit-plan-cue', 'habit-plan-anchor'].forEach(inputId => { document.getElementById(inputId)?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const form = e.target.closest('form'); form?.querySelector('button[type="submit"]')?.click(); } }); });
     document.querySelectorAll('input[name="planType"]')?.forEach(radio => { radio.addEventListener('change', (e) => { handleInteractionForAudio(); togglePlanTypeInputs(); trackGAEvent('planner_type_changed', { type: e.target.value }); playSound('click', 'C4', '16n'); }); });
     document.getElementById('saved-plans-display')?.addEventListener('click', (e) => {
         const planId = e.target.dataset.planId; if (!planId) return;
         if (e.target.classList.contains('edit-plan-btn')) { handleInteractionForAudio(); handleEditHabitPlan(planId); trackGAEvent('planner_edit_initiated'); playSound('click', 'E5', '16n'); showToast("Editing plan...", "info", 4000); }
-        else if (e.target.classList.contains('delete-plan-btn')) handleDeleteHabitPlan(planId); // GA event inside handler
+        else if (e.target.classList.contains('delete-plan-btn')) handleDeleteHabitPlan(planId);
     });
     document.getElementById('delete-habit-plan-btn')?.addEventListener('click', function() { const planIdInput = document.getElementById('habit-plan-id'); if (planIdInput?.value) handleDeleteHabitPlan(planIdInput.value); });
+
+    // Data Management (Original buttons in guide)
     document.getElementById('export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); trackGAEvent('data_exported'); });
     document.getElementById('import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); trackGAEvent('data_import_triggered'); playSound('click', 'D5', '16n'); });
+
+    // Settings Modal Listeners
     document.getElementById('close-settings-modal-btn')?.addEventListener('click', () => { handleInteractionForAudio(); hideSettingsModal(); trackGAEvent('settings_closed'); playSound('click', 'A4', '16n'); });
     document.getElementById('settings-modal')?.addEventListener('click', (e) => { if (e.target.id === 'settings-modal') { handleInteractionForAudio(); hideSettingsModal(); trackGAEvent('settings_closed'); playSound('click', 'A4', '16n'); } });
     document.getElementById('settings-form')?.addEventListener('submit', handleSaveSettings);
@@ -697,6 +809,11 @@ function setupEventListeners() {
     document.getElementById('settings-change-pillars-btn')?.addEventListener('click', () => { handleInteractionForAudio(); enableSimpleModeEditing(); trackGAEvent('settings_change_pillars_clicked'); playSound('click', 'E4', '16n'); });
     document.getElementById('settings-export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); trackGAEvent('data_exported_from_settings'); });
     document.getElementById('settings-import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); trackGAEvent('data_import_triggered_from_settings'); playSound('click', 'D5', '16n'); hideSettingsModal(); });
+
+    // *** NEW: Listener for "Enable Reminders" button in settings ***
+    document.getElementById('enable-notifications-btn')?.addEventListener('click', requestNotificationPermission);
+
+    // Global Keydown Listener (Escape Key)
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             if (document.getElementById('settings-modal')?.classList.contains('visible')) { handleInteractionForAudio(); hideSettingsModal(); trackGAEvent('settings_closed_esc'); }
@@ -707,12 +824,16 @@ function setupEventListeners() {
             else if (deselectMood()) { handleInteractionForAudio(); trackGAEvent('mood_deselected_esc'); }
         }
     });
+
+    // Touch listeners for swipe navigation
     const mainContentArea = document.querySelector('main');
     if (mainContentArea) {
         mainContentArea.addEventListener('touchstart', handleTouchStart, { passive: true });
         mainContentArea.addEventListener('touchmove', handleTouchMove, { passive: true });
         mainContentArea.addEventListener('touchend', handleTouchEnd);
     }
+
+    // Timeline Note Actions (Edit/Delete)
     document.getElementById('timeline-entries')?.addEventListener('click', (e) => {
         const target = e.target;
         const editButton = target.closest('.edit-note-btn');
@@ -724,7 +845,7 @@ function setupEventListeners() {
 }
 
 function handleShowCalendarTab() {
-    toggleAnalyticsVisibility(false); // This might trigger a GA event if visibility changes
+    toggleAnalyticsVisibility(false);
     showTab('calendar');
     trackGAEvent('view_tab', { tab_id: 'calendar', source: 'click_or_swipe' });
     const state = getState();
@@ -739,7 +860,7 @@ function handleShowCalendarTab() {
 
 function handleCalendarDayClick(dateStr) {
     handleInteractionForAudio();
-    handleDateChangeInput(dateStr); // GA event inside this for date_changed
+    handleDateChangeInput(dateStr);
     showTab('daily');
     trackGAEvent('view_tab', { tab_id: 'daily', source: 'calendar_day_click' });
 }
