@@ -3,6 +3,8 @@
 /**
  * Manages the UI elements and rendering for the Journey Timeline tab.
  * Includes rendering timeline entries, handling controls, and the note input area.
+ * *** MODIFIED: Added Edit/Delete buttons for note entries. ***
+ * *** MODIFIED to reorder flavor text (Encouragement before Tip). ***
  */
 
 // --- Imports ---
@@ -14,7 +16,6 @@ import { formatDate, escapeHtml, getWeekNumber } from '../utils.js'; // Utilitie
 /**
  * Renders the journey timeline entries based on current sort/filter state.
  * Fetches data from the state and updates the timeline container.
- * *** MODIFIED to reorder flavor text (Encouragement before Tip). ***
  */
 export function renderTimeline() {
     const container = document.getElementById("timeline-entries");
@@ -67,16 +68,28 @@ export function renderTimeline() {
 
         switch (entry.type) {
             case 'note':
+                // --- START MODIFICATION: Add Edit/Delete buttons for notes ---
+                const noteId = entry.noteId || ''; // Get the noteId
                 return `
-                    <div class="timeline-entry note-entry">
-                        <div class="timeline-date"><span class="icon" aria-hidden="true">📝</span> Note Added: ${entryDate}</div>
-                        <p>${escapeHtml(entry.text || 'Empty note.')}</p>
+                    <div class="timeline-entry note-entry" data-note-id="${escapeHtml(noteId)}">
+                        <div class="timeline-date">
+                            <span class="icon" aria-hidden="true">📝</span> Note Added: ${entryDate}
+                        </div>
+                        <p class="note-text-content">${escapeHtml(entry.text || 'Empty note.')}</p>
+                        <div class="timeline-entry-actions">
+                            <button class="timeline-action-btn edit-note-btn" data-note-id="${escapeHtml(noteId)}" aria-label="Edit note">
+                                <i class="fas fa-edit" aria-hidden="true"></i> Edit
+                            </button>
+                            <button class="timeline-action-btn delete-note-btn" data-note-id="${escapeHtml(noteId)}" aria-label="Delete note">
+                                <i class="fas fa-trash-alt" aria-hidden="true"></i> Delete
+                            </button>
+                        </div>
                     </div>`;
+                // --- END MODIFICATION ---
 
             case 'achievement':
                 const achievementData = stateRef.achievements?.[entry.achievementId];
                 if (achievementData) {
-                    // *** MODIFIED: Reorder flavor text parts (Encouragement before Tip) ***
                     const rawFlavorText = (achievementData.flavor || '');
                     const personalizedFlavor = rawFlavorText.replace(/\[Name\]/g, escapeHtml(userName));
                     const flavorParts = personalizedFlavor.split('\n');
@@ -84,15 +97,12 @@ export function renderTimeline() {
                     if (flavorParts.length > 0) {
                         formattedFlavorHTML += `<p class="flavor-quote">${escapeHtml(flavorParts[0].trim())}</p>`;
                     }
-                    // Add Encouragement (Part 3 / Index 2)
-                    if (flavorParts.length > 2) {
+                    if (flavorParts.length > 2) { // Encouragement (Part 3 / Index 2)
                         formattedFlavorHTML += `<p class="flavor-encouragement">${escapeHtml(flavorParts[2].trim())}</p>`;
                     }
-                    // Add Tip (Part 2 / Index 1)
-                    if (flavorParts.length > 1) {
+                    if (flavorParts.length > 1) { // Tip (Part 2 / Index 1)
                         formattedFlavorHTML += `<p class="flavor-tip">${escapeHtml(flavorParts[1].trim())}</p>`;
                     }
-                    // ***********************************************************************
 
                     return `
                         <div class="timeline-entry achievement-entry">
@@ -102,7 +112,6 @@ export function renderTimeline() {
                             <p class="description">${escapeHtml(achievementData.description || 'No description.')}</p>
                         </div>`;
                 } else {
-                    // Handle missing achievement data gracefully
                     console.log(`[TimelineUI] Achievement data missing for ID: ${entry.achievementId}.`);
                     return `
                         <div class="timeline-entry achievement-entry">
@@ -160,7 +169,6 @@ export function updateNoteHeaderPrompt() {
     if (isSunday) {
         const weekId = getWeekNumber(currentDate);
         if (weekId && Array.isArray(state.timeline)) {
-            // Check if a note with #weeklyreflection exists for the current week
             const hasWeeklyNote = state.timeline.some(entry => entry?.type === 'note' && entry.text?.toLowerCase().includes('#weeklyreflection') && getWeekNumber(entry.date?.split('T')[0]) === weekId);
             if (!hasWeeklyNote) { headerText = "Add a Timeline Note (Weekly Reflection?)"; }
         }
