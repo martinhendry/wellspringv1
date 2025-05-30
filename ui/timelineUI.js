@@ -2,27 +2,23 @@
 
 /**
  * Manages the UI elements and rendering for the Journey Timeline tab.
- * Includes rendering timeline entries, handling controls, and the note input area.
- * *** MODIFIED: Added Edit/Delete buttons for note entries. ***
- * *** MODIFIED to reorder flavor text (Encouragement before Tip). ***
+ * *** MODIFIED: Added more robust checks for element existence. ***
  */
 
 // --- Imports ---
-import { getState, getStateReference } from '../state.js'; // State access
-import { formatDate, escapeHtml, getWeekNumber } from '../utils.js'; // Utilities
+import { getState, getStateReference } from '../state.js';
+import { formatDate, escapeHtml, getWeekNumber } from '../utils.js';
 
 // --- Core Rendering Function ---
-
-/**
- * Renders the journey timeline entries based on current sort/filter state.
- * Fetches data from the state and updates the timeline container.
- */
 export function renderTimeline() {
     const container = document.getElementById("timeline-entries");
-    if (!container) { console.error("[TimelineUI] Timeline entries container not found."); return; }
+    if (!container) {
+        console.error("[TimelineUI] CRITICAL: Timeline entries container (#timeline-entries) not found. Cannot render timeline.");
+        return;
+    }
 
     const stateRef = getStateReference();
-    const state = getState(); // Read-only copy for username etc.
+    const state = getState();
 
     if (!stateRef || !Array.isArray(stateRef.timeline) || !stateRef.achievements) {
         console.error("[TimelineUI] State, timeline, or achievements data missing.");
@@ -34,7 +30,6 @@ export function renderTimeline() {
     const sortOrder = stateRef.timelineSortOrder || 'newest';
     const userName = state?.userName || 'You';
 
-    // --- Filter and Sort Timeline Data ---
     let filteredTimeline = [...stateRef.timeline];
     if (filterType !== 'all') {
         filteredTimeline = filteredTimeline.filter(entry => entry?.type === filterType);
@@ -48,7 +43,6 @@ export function renderTimeline() {
         });
     } catch (error) { console.error("[TimelineUI] Error sorting timeline:", error); }
 
-    // --- Generate HTML ---
     if (filteredTimeline.length === 0) {
         let emptyMessage = "No timeline entries yet.";
         if (filterType !== 'all') {
@@ -65,11 +59,10 @@ export function renderTimeline() {
             return '';
         }
         const entryDate = formatDate(entry.date.split('T')[0]) || 'Unknown Date';
+        const noteId = entry.noteId || '';
 
         switch (entry.type) {
             case 'note':
-                // --- START MODIFICATION: Add Edit/Delete buttons for notes ---
-                const noteId = entry.noteId || ''; // Get the noteId
                 return `
                     <div class="timeline-entry note-entry" data-note-id="${escapeHtml(noteId)}">
                         <div class="timeline-date">
@@ -85,8 +78,6 @@ export function renderTimeline() {
                             </button>
                         </div>
                     </div>`;
-                // --- END MODIFICATION ---
-
             case 'achievement':
                 const achievementData = stateRef.achievements?.[entry.achievementId];
                 if (achievementData) {
@@ -94,16 +85,9 @@ export function renderTimeline() {
                     const personalizedFlavor = rawFlavorText.replace(/\[Name\]/g, escapeHtml(userName));
                     const flavorParts = personalizedFlavor.split('\n');
                     let formattedFlavorHTML = '';
-                    if (flavorParts.length > 0) {
-                        formattedFlavorHTML += `<p class="flavor-quote">${escapeHtml(flavorParts[0].trim())}</p>`;
-                    }
-                    if (flavorParts.length > 2) { // Encouragement (Part 3 / Index 2)
-                        formattedFlavorHTML += `<p class="flavor-encouragement">${escapeHtml(flavorParts[2].trim())}</p>`;
-                    }
-                    if (flavorParts.length > 1) { // Tip (Part 2 / Index 1)
-                        formattedFlavorHTML += `<p class="flavor-tip">${escapeHtml(flavorParts[1].trim())}</p>`;
-                    }
-
+                    if (flavorParts.length > 0) formattedFlavorHTML += `<p class="flavor-quote">${escapeHtml(flavorParts[0].trim())}</p>`;
+                    if (flavorParts.length > 2) formattedFlavorHTML += `<p class="flavor-encouragement">${escapeHtml(flavorParts[2].trim())}</p>`;
+                    if (flavorParts.length > 1) formattedFlavorHTML += `<p class="flavor-tip">${escapeHtml(flavorParts[1].trim())}</p>`;
                     return `
                         <div class="timeline-entry achievement-entry">
                             <div class="timeline-date"><span class="icon" aria-hidden="true"><i class="fas fa-trophy"></i></span> Achievement Unlocked: ${entryDate}</div>
@@ -112,7 +96,6 @@ export function renderTimeline() {
                             <p class="description">${escapeHtml(achievementData.description || 'No description.')}</p>
                         </div>`;
                 } else {
-                    console.log(`[TimelineUI] Achievement data missing for ID: ${entry.achievementId}.`);
                     return `
                         <div class="timeline-entry achievement-entry">
                             <div class="timeline-date"><span class="icon" aria-hidden="true"><i class="fas fa-trophy"></i></span> Achievement Unlocked: ${entryDate}</div>
@@ -120,7 +103,6 @@ export function renderTimeline() {
                             <p class="description">(Details for achievement ID '${escapeHtml(String(entry.achievementId))}' not available)</p>
                         </div>`;
                 }
-
             case 'prestige':
                 return `
                     <div class="timeline-entry prestige-entry">
@@ -128,7 +110,6 @@ export function renderTimeline() {
                         <h4><i class="fas fa-recycle" aria-hidden="true"></i> Reached Cycle ${entry.prestigeLevel || '?'}!</h4>
                         <p class="description">Level and XP reset. The journey continues!</p>
                      </div>`;
-
             default:
                 console.warn("[TimelineUI] Unknown entry type:", entry.type);
                 return '';
@@ -136,34 +117,49 @@ export function renderTimeline() {
     }).join("");
 }
 
-// --- UI Control Updates ---
 export function updateTimelineControls() {
     const state = getState();
     if (!state) { console.error("[TimelineUI] State undefined in updateTimelineControls"); return; }
+
     const filterSelect = document.getElementById('timeline-filter');
     const sortSelect = document.getElementById('timeline-sort');
-    if (filterSelect) { filterSelect.value = state.timelineFilter || 'all'; } else { console.warn("[TimelineUI] Timeline filter select not found."); }
-    if (sortSelect) { sortSelect.value = state.timelineSortOrder || 'newest'; } else { console.warn("[TimelineUI] Timeline sort select not found."); }
+
+    if (!filterSelect) {
+        console.warn("[TimelineUI] Timeline filter select (#timeline-filter) not found in updateTimelineControls.");
+    } else {
+        filterSelect.value = state.timelineFilter || 'all';
+    }
+
+    if (!sortSelect) {
+        console.warn("[TimelineUI] Timeline sort select (#timeline-sort) not found in updateTimelineControls.");
+    } else {
+        sortSelect.value = state.timelineSortOrder || 'newest';
+    }
 }
 
-// --- Note Input Area ---
 export function setupAutoResizeTextarea() {
     const textarea = document.getElementById('new-note-textarea');
-    if (textarea) {
-        const adjustHeight = () => { textarea.style.height = 'auto'; textarea.style.height = `${textarea.scrollHeight}px`; };
-        textarea.addEventListener('input', adjustHeight);
-        adjustHeight(); // Initial adjustment
-    } else { console.warn("[TimelineUI] Note textarea not found for auto-resize."); }
+    if (!textarea) {
+        console.warn("[TimelineUI] Note textarea (#new-note-textarea) not found for auto-resize.");
+        return;
+    }
+    const adjustHeight = () => { textarea.style.height = 'auto'; textarea.style.height = `${textarea.scrollHeight}px`; };
+    textarea.addEventListener('input', adjustHeight);
+    adjustHeight();
 }
+
 export function updateNoteHeaderPrompt() {
     const noteHeader = document.querySelector('#add-note-form h3');
-    if (!noteHeader) { return; }
+    if (!noteHeader) {
+        // console.warn("[TimelineUI] Note header for prompt (#add-note-form h3) not found.");
+        return;
+    }
     const state = getState();
-    if (!state || !state.currentDate) { console.error("[TimelineUI] State or currentDate missing in updateNoteHeaderPrompt"); noteHeader.textContent = "Add a Timeline Note"; return; }
+    if (!state || !state.currentDate) { noteHeader.textContent = "Add a Timeline Note"; return; }
     const currentDate = state.currentDate;
     let dateObj;
     try { dateObj = new Date(currentDate + 'T00:00:00Z'); if (isNaN(dateObj.getTime())) throw new Error("Invalid date"); }
-    catch (e) { console.error("[TimelineUI] Invalid date in updateNoteHeaderPrompt:", currentDate); noteHeader.textContent = "Add a Timeline Note"; return; }
+    catch (e) { noteHeader.textContent = "Add a Timeline Note"; return; }
     const isSunday = dateObj.getUTCDay() === 0;
     let headerText = "Add a Timeline Note";
     if (isSunday) {
