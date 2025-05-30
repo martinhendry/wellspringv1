@@ -2,7 +2,13 @@
 
 /**
  * Main application logic for WellSpring.
- * ... (other comments)
+ * Initializes the app, sets up event listeners, and coordinates interactions
+ * between the state, UI modules, and other logic components.
+ * *** MODIFIED: Added Service Worker registration. ***
+ * *** MODIFIED: Added Edit/Delete functionality for timeline notes. ***
+ * *** MODIFIED: Improved feedback for adding notes by scrolling timeline to top. ***
+ * *** MODIFIED: Added basic GA4 event tracking. ***
+ * *** MODIFIED: Added Notification permission logic and client-side reminders. ***
  * *** MODIFIED: Deferred UI initialization for non-active tabs. ***
  */
 
@@ -63,33 +69,48 @@ let achievementsTabInitialized = false;
 function trackGAEvent(eventName, eventParams = {}) {
     if (typeof gtag === 'function') {
         gtag('event', eventName, eventParams);
+        // console.log(`[GA4] Event tracked: ${eventName}`, eventParams); // Keep for debugging if needed
+    } else {
+        // console.warn(`[GA4] gtag function not found. Event not tracked: ${eventName}`); // Keep for debugging
     }
 }
 
 // --- Notification Helper Functions ---
-// ... (updateNotificationPermissionStatusDisplay, requestNotificationPermission, showLocalNotification)
 function updateNotificationPermissionStatusDisplay() {
     const statusEl = document.getElementById('notification-permission-status');
     const enableBtn = document.getElementById('enable-notifications-btn');
-    if (!statusEl || !enableBtn) return;
+    if (!statusEl || !enableBtn) {
+        // console.warn("[App] Notification status/button elements not found in settings for display update.");
+        return;
+    }
+
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
         statusEl.textContent = 'Status: Reminders not supported by this browser.';
         statusEl.style.color = 'var(--accent)';
-        enableBtn.disabled = true; enableBtn.textContent = 'Not Supported'; return;
+        enableBtn.disabled = true;
+        enableBtn.textContent = 'Not Supported';
+        return;
     }
+
     switch (Notification.permission) {
         case 'granted':
             statusEl.textContent = 'Status: Reminders Enabled.';
             statusEl.style.color = 'var(--secondary)';
-            enableBtn.textContent = 'Reminders Active'; enableBtn.disabled = true; break;
+            enableBtn.textContent = 'Reminders Active';
+            enableBtn.disabled = true;
+            break;
         case 'denied':
             statusEl.textContent = 'Status: Reminders Blocked by browser.';
             statusEl.style.color = 'var(--accent)';
-            enableBtn.textContent = 'Enable Reminders (Blocked)'; enableBtn.disabled = true; break;
-        default:
+            enableBtn.textContent = 'Enable Reminders (Blocked)';
+            enableBtn.disabled = true;
+            break;
+        default: // 'default' (i.e., not yet asked)
             statusEl.textContent = 'Status: Reminders Not Yet Enabled.';
             statusEl.style.color = 'var(--text-muted)';
-            enableBtn.textContent = 'Enable Reminders'; enableBtn.disabled = false; break;
+            enableBtn.textContent = 'Enable Reminders';
+            enableBtn.disabled = false;
+            break;
     }
 }
 
@@ -97,30 +118,49 @@ async function requestNotificationPermission() {
     handleInteractionForAudio();
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
         showToast("This browser does not support notifications.", "error");
-        playSound('error'); updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_attempt', { supported: false }); return null;
+        playSound('error');
+        updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_attempt', { supported: false });
+        return null;
     }
+
     if (Notification.permission === 'granted') {
         showToast("Reminders are already enabled!", "info");
-        updateNotificationPermissionStatusDisplay(); return 'granted';
+        updateNotificationPermissionStatusDisplay();
+        return 'granted';
     }
+
     if (Notification.permission === 'denied') {
         showToast("Reminders are blocked. Please enable them in your browser/OS settings.", "error");
-        playSound('error'); updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_blocked_interaction'); return 'denied';
+        playSound('error');
+        updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_blocked_interaction');
+        return 'denied';
     }
+
     try {
         const permission = await Notification.requestPermission();
         trackGAEvent('notification_permission_requested', { permission_status: permission });
-        if (permission === 'granted') { showToast("Great! Reminders enabled.", "success"); playSound('save'); }
-        else if (permission === 'denied') { showToast("Reminders permission denied. You can change this in browser settings.", "info"); playSound('click'); }
-        else { showToast("Reminder permission not granted (prompt dismissed).", "info"); playSound('click'); }
-        updateNotificationPermissionStatusDisplay(); return permission;
+
+        if (permission === 'granted') {
+            showToast("Great! Reminders enabled.", "success");
+            playSound('save');
+        } else if (permission === 'denied') {
+            showToast("Reminders permission denied. You can change this in browser settings.", "info");
+            playSound('click');
+        } else { // 'default' - user dismissed the prompt
+            showToast("Reminder permission not granted (prompt dismissed).", "info");
+            playSound('click');
+        }
+        updateNotificationPermissionStatusDisplay();
+        return permission;
     } catch (error) {
         console.error("[App] Error requesting notification permission:", error);
         showToast("Could not request notification permission.", "error");
-        playSound('error'); updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_error'); return 'error';
+        playSound('error');
+        updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_error');
+        return 'error'; // Or null, depending on how you want to handle errors
     }
 }
 
@@ -140,42 +180,54 @@ async function showLocalNotification(title, options) {
     }
 }
 
-
 // --- Reminder Logic Functions ---
-// ... (checkAndShowBackupReminder, checkAndShowMissedDayReminder) ...
 function checkAndShowBackupReminder() {
     const state = getState();
     if (!state.isOnboardingComplete || Notification.permission !== 'granted') return;
+
     const lastReminderTime = state.lastBackupReminderShown ? new Date(state.lastBackupReminderShown).getTime() : 0;
     const lastExportTime = state.lastDataExportTime ? new Date(state.lastDataExportTime).getTime() : 0;
     const relevantLastTime = Math.max(lastReminderTime, lastExportTime);
     const now = new Date().getTime();
     const daysSinceLastRelevant = (now - relevantLastTime) / DAYS_IN_MILLISECONDS;
+
     const totalSavedDays = Object.keys(state.savedDays || {}).length;
+
     if (totalSavedDays >= MIN_SAVED_DAYS_FOR_BACKUP_REMINDER && daysSinceLastRelevant >= BACKUP_REMINDER_INTERVAL_DAYS) {
+        console.log("[App] Backup reminder conditions met. Attempting to show notification.");
         showLocalNotification('WellSpring Backup Reminder', {
             body: `It's been about ${BACKUP_REMINDER_INTERVAL_DAYS} days. Consider backing up your WellSpring data to keep it safe!`,
-            icon: 'assets/favicon.png', badge: 'assets/favicon.png',
-            tag: 'wellspring-backup-reminder', data: { url: './index.html#settings-modal' }
+            icon: 'assets/favicon.png', // Use your app icon
+            badge: 'assets/favicon.png',
+            tag: 'wellspring-backup-reminder', // So it replaces any existing backup reminder
+            data: { url: './index.html#settings-modal' } // Link to open settings or a specific part of it
         });
-        setLastBackupReminderShown();
+        setLastBackupReminderShown(); // Update state that reminder was shown
     }
 }
 
 function checkAndShowMissedDayReminder() {
     const state = getState();
     if (!state.isOnboardingComplete || Notification.permission !== 'granted' || !state.savedDays) return;
+
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const yesterdayString = yesterday.toISOString().split('T')[0];
+
     const firstUsage = findFirstUsageDate(state);
-    if (firstUsage && yesterdayString < firstUsage) return;
+    if (firstUsage && yesterdayString < firstUsage) {
+        return; // Don't remind for days before the app was first used.
+    }
+
+    // Don't show if yesterday was saved OR if current view is already yesterday (user might be actively logging it)
     if (!state.savedDays[yesterdayString] && state.currentDate !== yesterdayString) {
+        console.log(`[App] Missed day reminder conditions met for ${yesterdayString}. Attempting to show notification.`);
         showLocalNotification('WellSpring Catch-up', {
             body: `Did you forget to log for ${escapeHtml(formatDate(yesterdayString))}? Tap to log now!`,
-            icon: 'assets/favicon.png', badge: 'assets/favicon.png',
-            tag: 'wellspring-missed-day-reminder-' + yesterdayString,
+            icon: 'assets/favicon.png',
+            badge: 'assets/favicon.png',
+            tag: 'wellspring-missed-day-reminder-' + yesterdayString, // Unique tag per day
             data: { url: `./index.html?date=${yesterdayString}` }
         });
     }
@@ -189,7 +241,7 @@ function init() {
     loadState();
     initTheme();
     initializeAudio();
-    registerServiceWorker();
+    registerServiceWorker(); // Ensure this function is defined below
     updateAudioToggleButton();
 
     // populatePillarSelect(); // Moved to planner expand
@@ -206,7 +258,7 @@ function init() {
 
     // Defer initial daily log refresh to ensure DOM is ready
     requestAnimationFrame(() => {
-        refreshDailyLogUI();
+        refreshDailyLogUI(); // Render daily log
     });
 
     setupEventListeners();
@@ -218,7 +270,7 @@ function init() {
         console.log(`[App] Date parameter found in URL: ${dateParam}. Setting current date.`);
         updateCurrentDate(dateParam);
         resetDateDisplay();
-        requestAnimationFrame(() => {
+        requestAnimationFrame(() => { // Also defer this refresh
              refreshDailyLogUI();
         });
         showTab('daily');
@@ -248,7 +300,7 @@ function init() {
 }
 
 // --- Service Worker Registration ---
-function registerServiceWorker() {
+function registerServiceWorker() { // Ensure this function is defined
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
@@ -279,7 +331,7 @@ function handleStateChangeForSave(e) {
 }
 
 
-// --- Event Handlers (abbreviated, full logic from previous version wellspring_app_reminders_1) ---
+// --- Event Handlers ---
 function handleDateChangeInput(newDateString) {
     handleInteractionForAudio();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateString)) { showToast("Invalid date selected.", "error"); resetDateDisplay(); return; }
@@ -468,9 +520,9 @@ function handleTouchEnd(event) {
             const nextTabButton = tabButtons[nextTabIndex]; const nextTabId = nextTabButton?.dataset.tab;
             if (nextTabId) {
                  if (nextTabId === 'calendar') { handleShowCalendarTab(); }
-                 else if (nextTabId === 'journey') { renderTimeline(); updateTimelineControls(); setupAutoResizeTextarea(); updateNoteHeaderPrompt(); showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
-                 else if (nextTabId === 'achievements') { renderAchievementBoard(); showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
-                 else { showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });}
+                 else if (nextTabId === 'journey') { showTab(nextTabId); if (!journeyTabInitialized) { setupAutoResizeTextarea(); journeyTabInitialized = true; } renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
+                 else if (nextTabId === 'achievements') { showTab(nextTabId); if (!achievementsTabInitialized) { achievementsTabInitialized = true; } renderAchievementBoard(); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
+                 else { showTab(nextTabId); if (nextTabId === 'daily') { refreshDailyLogUI(); } trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });}
                  playSound('navigate', deltaX < 0 ? 'E5' : 'C5', '16n');
             }
         }
@@ -479,7 +531,6 @@ function handleTouchEnd(event) {
 }
 function appShowSettingsModal() { handleInteractionForAudio(); uiShowSettingsModal(); updateNotificationPermissionStatusDisplay(); trackGAEvent('settings_opened'); playSound('click', 'B4', '16n'); }
 
-// --- Event Listener Setup ---
 function setupEventListeners() {
     console.log("[App] Setting up event listeners...");
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
@@ -501,39 +552,35 @@ function setupEventListeners() {
             handleInteractionForAudio();
             const tabId = e.target.dataset.tab;
             if (tabId) {
-                // --- START MODIFICATION: Call UI setups on tab switch ---
                 if (tabId === 'calendar') {
-                    handleShowCalendarTab(); // This already handles its rendering
+                    handleShowCalendarTab();
                 } else if (tabId === 'journey') {
-                    showTab(tabId); // Show tab first
+                    showTab(tabId);
                     if (!journeyTabInitialized) {
                         setupAutoResizeTextarea();
                         journeyTabInitialized = true;
                     }
-                    renderTimeline(); // Always render
+                    renderTimeline();
                     updateTimelineControls();
                     updateNoteHeaderPrompt();
                     trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
                 } else if (tabId === 'achievements') {
-                    showTab(tabId); // Show tab first
+                    showTab(tabId);
                     if (!achievementsTabInitialized) {
-                        // Potentially other one-time setups for achievements tab
                         achievementsTabInitialized = true;
                     }
-                    renderAchievementBoard(); // Always render
+                    renderAchievementBoard();
                     trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
-                } else { // For 'daily' or any other tabs
+                } else {
                     showTab(tabId);
                     if (tabId === 'daily') {
-                        refreshDailyLogUI(); // Ensure daily log is fresh if explicitly clicked
+                        refreshDailyLogUI();
                     }
                     trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
                 }
-                // --- END MODIFICATION ---
             }
         }
     });
-    // ... (rest of event listeners from wellspring_app_reminders_1, ensuring #enable-notifications-btn listener is present)
     document.getElementById('prev-day-btn')?.addEventListener('click', () => handleDateArrowChange(-1));
     document.getElementById('next-day-btn')?.addEventListener('click', () => handleDateArrowChange(1));
     document.getElementById('formatted-date')?.addEventListener('click', handleShowDatePicker);
@@ -712,7 +759,6 @@ function handleCalendarDayClick(dateStr) {
     handleDateChangeInput(dateStr); // This updates state and refreshes daily log UI
     showTab('daily'); // Switch to daily log tab
     trackGAEvent('view_tab', { tab_id: 'daily', source: 'calendar_day_click' });
-    // No need to call refreshDailyLogUI() here as handleDateChangeInput should trigger it
 }
 
 function handleMonthChange(delta) {
