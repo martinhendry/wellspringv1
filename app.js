@@ -20,14 +20,12 @@ import {
     setSimpleModePillarCount, setSimpleModePillars, setShowPlanner,
     setLevel100ToastShown,
     updateNoteInTimeline, deleteNoteFromTimeline,
-    // --- START IMPORT: New state functions for reminder tracking ---
-    setLastBackupReminderShown
-    // --- END IMPORT ---
+    setLastBackupReminderShown // Ensured this is imported
 } from './state.js';
 import { checkAchievements } from './achievementlogic.js';
-import { exportData, setupImportListener } from './datamanagement.js'; // exportData calls setLastDataExportTime
+import { exportData, setupImportListener } from './datamanagement.js';
 import { initializeAudio, playSound, handleInteractionForAudio } from './audio.js';
-import { findFirstUsageDate, getWeekNumber, calculateLevelData, escapeHtml, formatDate } from './utils.js'; // Added formatDate
+import { findFirstUsageDate, getWeekNumber, calculateLevelData, escapeHtml, formatDate } from './utils.js';
 
 // --- UI Modules ---
 import { initTheme, toggleTheme, updateAudioToggleButton, showToast, showTab, updateUIVisibilityForMode } from './ui/globalUI.js';
@@ -41,7 +39,6 @@ import { showWelcomeMessage, showNamePromptModal, closeNamePromptModal, closeWel
 import { showOnboardingModal, hideOnboardingModal, goToOnboardingStep, updatePillarSelectionCounter, populateOnboardingPillarList } from './ui/onboardingUI.js';
 import { toggleCollapsibleSection, closeGuide } from './ui/collapsibleUI.js';
 import { showDatePicker } from './ui/datePickerUI.js';
-// Ensure settingsUI functions are correctly imported, especially showSettingsModal
 import { showSettingsModal as uiShowSettingsModal, hideSettingsModal, updateSettingsModalVisibility, updateSettingsPillarCounter, enableSimpleModeEditing } from './ui/settingsUI.js';
 
 
@@ -49,12 +46,9 @@ import { showSettingsModal as uiShowSettingsModal, hideSettingsModal, updateSett
 const SAVE_DELAY = 350;
 const SWIPE_THRESHOLD = 50;
 const SWIPE_MAX_VERTICAL = 75;
-// --- START NEW: Reminder Constants ---
-const BACKUP_REMINDER_INTERVAL_DAYS = 30; // Remind every 30 days
-const MIN_SAVED_DAYS_FOR_BACKUP_REMINDER = 7; // Only remind if user has at least this many saved days
+const BACKUP_REMINDER_INTERVAL_DAYS = 30;
+const MIN_SAVED_DAYS_FOR_BACKUP_REMINDER = 7;
 const DAYS_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
-// --- END NEW: Reminder Constants ---
-
 
 // --- State ---
 let saveTimeoutId = null;
@@ -64,14 +58,13 @@ let touchStartY = 0;
 let touchEndX = 0;
 let touchEndY = 0;
 
-
 // --- GA4 Event Tracking Helper ---
 function trackGAEvent(eventName, eventParams = {}) {
     if (typeof gtag === 'function') {
         gtag('event', eventName, eventParams);
-        // console.log(`[GA4] Event tracked: ${eventName}`, eventParams); // Keep for debugging if needed
+        // console.log(`[GA4] Event tracked: ${eventName}`, eventParams);
     } else {
-        // console.warn(`[GA4] gtag function not found. Event not tracked: ${eventName}`); // Keep for debugging
+        // console.warn(`[GA4] gtag function not found. Event not tracked: ${eventName}`);
     }
 }
 
@@ -79,37 +72,26 @@ function trackGAEvent(eventName, eventParams = {}) {
 function updateNotificationPermissionStatusDisplay() {
     const statusEl = document.getElementById('notification-permission-status');
     const enableBtn = document.getElementById('enable-notifications-btn');
-    if (!statusEl || !enableBtn) {
-        return;
-    }
+    if (!statusEl || !enableBtn) return;
 
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
         statusEl.textContent = 'Status: Reminders not supported by this browser.';
         statusEl.style.color = 'var(--accent)';
-        enableBtn.disabled = true;
-        enableBtn.textContent = 'Not Supported';
-        return;
+        enableBtn.disabled = true; enableBtn.textContent = 'Not Supported'; return;
     }
-
     switch (Notification.permission) {
         case 'granted':
             statusEl.textContent = 'Status: Reminders Enabled.';
             statusEl.style.color = 'var(--secondary)';
-            enableBtn.textContent = 'Reminders Active';
-            enableBtn.disabled = true;
-            break;
+            enableBtn.textContent = 'Reminders Active'; enableBtn.disabled = true; break;
         case 'denied':
             statusEl.textContent = 'Status: Reminders Blocked by browser.';
             statusEl.style.color = 'var(--accent)';
-            enableBtn.textContent = 'Enable Reminders (Blocked)';
-            enableBtn.disabled = true;
-            break;
-        default: // 'default' (i.e., not yet asked)
+            enableBtn.textContent = 'Enable Reminders (Blocked)'; enableBtn.disabled = true; break;
+        default:
             statusEl.textContent = 'Status: Reminders Not Yet Enabled.';
             statusEl.style.color = 'var(--text-muted)';
-            enableBtn.textContent = 'Enable Reminders';
-            enableBtn.disabled = false;
-            break;
+            enableBtn.textContent = 'Enable Reminders'; enableBtn.disabled = false; break;
     }
 }
 
@@ -117,64 +99,36 @@ async function requestNotificationPermission() {
     handleInteractionForAudio();
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
         showToast("This browser does not support notifications.", "error");
-        playSound('error');
-        updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_attempt', { supported: false });
-        return null;
+        playSound('error'); updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_attempt', { supported: false }); return null;
     }
-
     if (Notification.permission === 'granted') {
         showToast("Reminders are already enabled!", "info");
-        updateNotificationPermissionStatusDisplay();
-        return 'granted';
+        updateNotificationPermissionStatusDisplay(); return 'granted';
     }
-
     if (Notification.permission === 'denied') {
         showToast("Reminders are blocked. Please enable them in your browser/OS settings.", "error");
-        playSound('error');
-        updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_blocked_interaction');
-        return 'denied';
+        playSound('error'); updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_blocked_interaction'); return 'denied';
     }
-
     try {
         const permission = await Notification.requestPermission();
         trackGAEvent('notification_permission_requested', { permission_status: permission });
-
-        if (permission === 'granted') {
-            showToast("Great! Reminders enabled.", "success");
-            playSound('save');
-        } else if (permission === 'denied') {
-            showToast("Reminders permission denied. You can change this in browser settings.", "info");
-            playSound('click');
-        } else {
-            showToast("Reminder permission not granted (prompt dismissed).", "info");
-            playSound('click');
-        }
-        updateNotificationPermissionStatusDisplay();
-        return permission;
+        if (permission === 'granted') { showToast("Great! Reminders enabled.", "success"); playSound('save'); }
+        else if (permission === 'denied') { showToast("Reminders permission denied. You can change this in browser settings.", "info"); playSound('click'); }
+        else { showToast("Reminder permission not granted (prompt dismissed).", "info"); playSound('click'); }
+        updateNotificationPermissionStatusDisplay(); return permission;
     } catch (error) {
         console.error("[App] Error requesting notification permission:", error);
         showToast("Could not request notification permission.", "error");
-        playSound('error');
-        updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_error');
-        return 'error';
+        playSound('error'); updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_error'); return 'error';
     }
 }
 
-// --- START NEW: Show Local Notification Function ---
-/**
- * Shows a local notification using the Service Worker.
- * @param {string} title - The title of the notification.
- * @param {object} options - Options for the notification (body, icon, tag, data, etc.).
- */
 async function showLocalNotification(title, options) {
     if (!('Notification' in window) || !('serviceWorker' in navigator) || Notification.permission !== 'granted') {
-        console.warn("[App] Cannot show local notification: Not supported or permission not granted.");
-        if (Notification.permission !== 'granted') {
-            console.log("[App] Notification permission is: " + Notification.permission);
-        }
+        console.warn("[App] Cannot show local notification: Not supported or permission not granted. Current permission: " + Notification.permission);
         return;
     }
     try {
@@ -187,69 +141,49 @@ async function showLocalNotification(title, options) {
         trackGAEvent('local_notification_error', { error_message: String(error) });
     }
 }
-// --- END NEW: Show Local Notification Function ---
 
-
-// --- START NEW: Reminder Logic Functions ---
-/**
- * Checks if a backup reminder should be shown and displays it.
- */
+// --- Reminder Logic Functions ---
 function checkAndShowBackupReminder() {
     const state = getState();
     if (!state.isOnboardingComplete || Notification.permission !== 'granted') return;
-
     const lastReminderTime = state.lastBackupReminderShown ? new Date(state.lastBackupReminderShown).getTime() : 0;
     const lastExportTime = state.lastDataExportTime ? new Date(state.lastDataExportTime).getTime() : 0;
     const relevantLastTime = Math.max(lastReminderTime, lastExportTime);
     const now = new Date().getTime();
     const daysSinceLastRelevant = (now - relevantLastTime) / DAYS_IN_MILLISECONDS;
-
     const totalSavedDays = Object.keys(state.savedDays || {}).length;
 
     if (totalSavedDays >= MIN_SAVED_DAYS_FOR_BACKUP_REMINDER && daysSinceLastRelevant >= BACKUP_REMINDER_INTERVAL_DAYS) {
         console.log("[App] Backup reminder conditions met. Attempting to show notification.");
         showLocalNotification('WellSpring Backup Reminder', {
             body: `It's been about ${BACKUP_REMINDER_INTERVAL_DAYS} days. Consider backing up your WellSpring data to keep it safe!`,
-            icon: 'assets/favicon.png',
-            badge: 'assets/favicon.png',
-            tag: 'wellspring-backup-reminder',
-            data: { url: './index.html#settings-modal' } // Link to open settings or a specific part of it
+            icon: 'assets/favicon.png', badge: 'assets/favicon.png',
+            tag: 'wellspring-backup-reminder', data: { url: './index.html#settings-modal' }
         });
-        setLastBackupReminderShown(); // Update state that reminder was shown
+        setLastBackupReminderShown();
     }
 }
 
-/**
- * Checks if the previous day was logged and shows a "catch-up" reminder if not.
- */
 function checkAndShowMissedDayReminder() {
     const state = getState();
     if (!state.isOnboardingComplete || Notification.permission !== 'granted' || !state.savedDays) return;
-
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const yesterdayString = yesterday.toISOString().split('T')[0];
-
     const firstUsage = findFirstUsageDate(state);
-    if (firstUsage && yesterdayString < firstUsage) {
-        return; // Don't remind for days before the app was first used.
-    }
+    if (firstUsage && yesterdayString < firstUsage) return;
 
-    // Don't show if yesterday was saved OR if current view is already yesterday (user might be actively logging it)
     if (!state.savedDays[yesterdayString] && state.currentDate !== yesterdayString) {
         console.log(`[App] Missed day reminder conditions met for ${yesterdayString}. Attempting to show notification.`);
         showLocalNotification('WellSpring Catch-up', {
             body: `Did you forget to log for ${escapeHtml(formatDate(yesterdayString))}? Tap to log now!`,
-            icon: 'assets/favicon.png',
-            badge: 'assets/favicon.png',
-            tag: 'wellspring-missed-day-reminder-' + yesterdayString, // Unique tag per day
+            icon: 'assets/favicon.png', badge: 'assets/favicon.png',
+            tag: 'wellspring-missed-day-reminder-' + yesterdayString,
             data: { url: `./index.html?date=${yesterdayString}` }
         });
     }
 }
-// --- END NEW: Reminder Logic Functions ---
-
 
 // --- Initialization ---
 function init() {
@@ -258,7 +192,7 @@ function init() {
     loadState();
     initTheme();
     initializeAudio();
-    registerServiceWorker(); // Ensure SW is registered
+    registerServiceWorker(); // Call to the function defined below
     updateAudioToggleButton();
     populatePillarSelect();
     setupAutoResizeTextarea();
@@ -272,22 +206,18 @@ function init() {
     trackGAEvent('view_tab', { tab_id: 'daily' });
 
     setupEventListeners();
-    updateNotificationPermissionStatusDisplay(); // Set initial status for notification settings
+    updateNotificationPermissionStatusDisplay();
 
-    // --- START MODIFICATION: Handle ?date=YYYY-MM-DD URL parameter ---
     const urlParams = new URLSearchParams(window.location.search);
     const dateParam = urlParams.get('date');
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
         console.log(`[App] Date parameter found in URL: ${dateParam}. Setting current date.`);
-        updateCurrentDate(dateParam); // Update state
-        resetDateDisplay();      // Update header display
-        refreshDailyLogUI();     // Refresh daily log for this date
-        showTab('daily');        // Ensure daily log tab is active
-        // Optional: Clear the URL parameter to avoid re-triggering on refresh if desired
+        updateCurrentDate(dateParam);
+        resetDateDisplay();
+        refreshDailyLogUI();
+        showTab('daily');
         // window.history.replaceState({}, document.title, "./index.html");
     }
-    // --- END MODIFICATION ---
-
 
     if (!initialStateData.isOnboardingComplete) {
         showOnboardingModal();
@@ -299,26 +229,23 @@ function init() {
             trackGAEvent('name_prompt_shown');
         }
         refreshDailyLogUI();
-        // --- START MODIFICATION: Check reminders after onboarding & if permission granted ---
-        // Use a timeout to allow SW registration and permission state to settle.
         setTimeout(() => {
             if (Notification.permission === 'granted') {
                 checkAndShowBackupReminder();
                 checkAndShowMissedDayReminder();
             }
-        }, 2000); // Delay reminder checks slightly
-        // --- END MODIFICATION ---
+        }, 2000);
     }
     checkAchievements(getStateReference());
     setupDebouncedSave();
     console.log("[App] WellSpring Initialization complete.");
 }
 
-// ... (registerServiceWorker, setupDebouncedSave, handleStateChangeForSave) ...
+// --- Service Worker Registration ---
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
+            navigator.serviceWorker.register('./sw.js') // Ensure path is correct
                 .then(registration => {
                     console.log('[App] Service Worker registered successfully with scope:', registration.scope);
                 })
@@ -331,6 +258,7 @@ function registerServiceWorker() {
     }
 }
 
+// --- Debounced Saving ---
 function setupDebouncedSave() {
     document.removeEventListener('stateChanged', handleStateChangeForSave);
     document.addEventListener('stateChanged', handleStateChangeForSave);
@@ -344,52 +272,26 @@ function handleStateChangeForSave(e) {
     }, SAVE_DELAY);
 }
 
-// ... (Event Handlers: handleDateChangeInput, handleDateArrowChange, etc. - including GA events)
+// --- Event Handlers (abbreviated for brevity, ensure all handlers from previous version are present) ---
 function handleDateChangeInput(newDateString) {
     handleInteractionForAudio();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateString)) {
-        showToast("Invalid date selected.", "error");
-        resetDateDisplay(); return;
-    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateString)) { showToast("Invalid date selected.", "error"); resetDateDisplay(); return; }
     const selectedDate = new Date(newDateString + 'T00:00:00Z');
     const today = new Date(); today.setUTCHours(23, 59, 59, 999);
-    if (selectedDate > today) {
-        showToast("Future dates cannot be selected!", "error");
-        playSound('error');
-        resetDateDisplay(); return;
-    }
-    updateCurrentDate(newDateString);
-    resetDateDisplay();
-    refreshDailyLogUI();
-    updateNoteHeaderPrompt();
-    playSound('navigate', 'D5', '16n');
-    trackGAEvent('date_changed', { method: 'picker' });
+    if (selectedDate > today) { showToast("Future dates cannot be selected!", "error"); playSound('error'); resetDateDisplay(); return; }
+    updateCurrentDate(newDateString); resetDateDisplay(); refreshDailyLogUI(); updateNoteHeaderPrompt(); playSound('navigate', 'D5', '16n'); trackGAEvent('date_changed', { method: 'picker' });
 }
-
 function handleDateArrowChange(offset) {
     handleInteractionForAudio();
     const currentDateStr = getState().currentDate;
     const currentDateObj = new Date(currentDateStr + 'T00:00:00Z');
     currentDateObj.setUTCDate(currentDateObj.getUTCDate() + offset);
     const today = new Date(); today.setUTCHours(23, 59, 59, 999);
-    if (currentDateObj > today) {
-        playSound('error'); return;
-    }
+    if (currentDateObj > today) { playSound('error'); return; }
     const newDateStr = currentDateObj.toISOString().split('T')[0];
-    updateCurrentDate(newDateStr);
-    resetDateDisplay();
-    refreshDailyLogUI();
-    updateNoteHeaderPrompt();
-    playSound('navigate', offset > 0 ? 'E5' : 'C5', '16n');
-    trackGAEvent('date_changed', { method: 'arrows', direction: offset > 0 ? 'next' : 'previous' });
+    updateCurrentDate(newDateStr); resetDateDisplay(); refreshDailyLogUI(); updateNoteHeaderPrompt(); playSound('navigate', offset > 0 ? 'E5' : 'C5', '16n'); trackGAEvent('date_changed', { method: 'arrows', direction: offset > 0 ? 'next' : 'previous' });
 }
-
-function handleShowDatePicker() {
-    handleInteractionForAudio();
-    showDatePicker();
-    trackGAEvent('show_date_picker');
-}
-
+function handleShowDatePicker() { handleInteractionForAudio(); showDatePicker(); trackGAEvent('show_date_picker'); }
 function handleSaveDay() {
     handleInteractionForAudio();
     const stateRef = getStateReference();
@@ -397,29 +299,17 @@ function handleSaveDay() {
     const currentDate = stateRef.currentDate;
     const activePillars = Object.keys(stateRef.pillars || {}).filter(id => stateRef.pillars[id]?.days?.[currentDate]);
     const mood = stateRef.mood?.[currentDate];
-    if (activePillars.length === 0 && !mood) {
-        showToast("Log at least one pillar or mood to save the day.", "info");
-        playSound('error'); return;
-    }
+    if (activePillars.length === 0 && !mood) { showToast("Log at least one pillar or mood to save the day.", "info"); playSound('error'); return; }
     const saved = saveDay(currentDate);
     if (saved) {
-        trackGAEvent('day_saved', {
-            pillar_count: activePillars.length,
-            mood_logged: !!mood
-        });
-        const updatedState = getState();
-        const currentPrestige = updatedState.prestige;
-        checkAchievements(getStateReference());
-        refreshDailyLogUI();
-        showToast("Day saved successfully!", "success");
-        playSound('save', 'E5', '8n');
+        trackGAEvent('day_saved', { pillar_count: activePillars.length, mood_logged: !!mood });
+        const updatedState = getState(); const currentPrestige = updatedState.prestige;
+        checkAchievements(getStateReference()); refreshDailyLogUI(); showToast("Day saved successfully!", "success"); playSound('save', 'E5', '8n');
         try {
             const levelData = calculateLevelData(updatedState.totalXP, currentPrestige);
             if (levelData.level >= 100 && updatedState.level100ToastShownForCycle !== currentPrestige) {
                 showToast("🎉 Level 100! Ready for the next Cycle? Find the button on the Journey tab!", "info", 8000);
-                setLevel100ToastShown(currentPrestige);
-                playSound('achievement');
-                trackGAEvent('level_100_reached', { cycle: currentPrestige });
+                setLevel100ToastShown(currentPrestige); playSound('achievement'); trackGAEvent('level_100_reached', { cycle: currentPrestige });
             }
         } catch(e) { console.error("[App] Error checking for Level 100 toast:", e); }
         const isSunday = new Date(currentDate + 'T00:00:00Z').getUTCDay() === 0;
@@ -435,139 +325,68 @@ function handleSaveDay() {
         }
     } else { showToast("This day is already saved.", "info"); }
 }
-
 function handleUnlockDay() {
-    handleInteractionForAudio();
-    const state = getState();
-    if (!state || !state.currentDate) return;
+    handleInteractionForAudio(); const state = getState(); if (!state || !state.currentDate) return;
     if (confirm("Are you sure you want to unlock this day? This allows editing but removes the 'saved' status and may affect your streak.")) {
-        if (unlockDayEntry(state.currentDate)) {
-            trackGAEvent('day_unlocked');
-            refreshDailyLogUI();
-            showToast("Day unlocked for editing.", "info");
-            playSound('unlock', 'C4', '8n');
-        }
+        if (unlockDayEntry(state.currentDate)) { trackGAEvent('day_unlocked'); refreshDailyLogUI(); showToast("Day unlocked for editing.", "info"); playSound('unlock', 'C4', '8n'); }
     }
 }
-
 function handleAddNote() {
-    handleInteractionForAudio();
-    const textarea = document.getElementById("new-note-textarea");
-    if (!textarea) return;
-    const noteText = textarea.value.trim();
-    if (!noteText) {
-        showToast("Please enter some text for your note.", "info");
-        playSound('error'); return;
-    }
-    addTimelineEntry({ type: 'note', text: noteText, date: new Date().toISOString() });
-    trackGAEvent('note_added');
-    showToast("Note added to timeline.", "success");
-    textarea.value = "";
-    setupAutoResizeTextarea();
-    renderTimeline();
-    const timelineEntriesContainer = document.getElementById('timeline-entries');
-    if (timelineEntriesContainer) timelineEntriesContainer.scrollTop = 0;
-    playSound('save', 'D5', '16n');
-    checkAchievements(getStateReference());
-    refreshDailyLogUI();
+    handleInteractionForAudio(); const textarea = document.getElementById("new-note-textarea"); if (!textarea) return;
+    const noteText = textarea.value.trim(); if (!noteText) { showToast("Please enter some text for your note.", "info"); playSound('error'); return; }
+    addTimelineEntry({ type: 'note', text: noteText, date: new Date().toISOString() }); trackGAEvent('note_added');
+    showToast("Note added to timeline.", "success"); textarea.value = ""; setupAutoResizeTextarea(); renderTimeline();
+    const timelineEntriesContainer = document.getElementById('timeline-entries'); if (timelineEntriesContainer) timelineEntriesContainer.scrollTop = 0;
+    playSound('save', 'D5', '16n'); checkAchievements(getStateReference()); refreshDailyLogUI();
 }
-
 function handlePrestigeClick() {
-    handleInteractionForAudio();
-    const state = getState();
-    if (!state) return;
+    handleInteractionForAudio(); const state = getState(); if (!state) return;
     const levelData = calculateLevelData(state.totalXP, state.prestige);
-    if (levelData.level < 100) {
-        showToast("You must reach Level 100 to enter the next Cycle!", "info");
-        playSound('error'); return;
-    }
+    if (levelData.level < 100) { showToast("You must reach Level 100 to enter the next Cycle!", "info"); playSound('error'); return; }
     if (confirm(`Are you sure you want to begin Cycle ${levelData.prestige + 1}? Your Level and XP will reset, but your progress and achievements remain.`)) {
-        if (prestigeLevel()) {
-            trackGAEvent('prestige_completed', { new_cycle: getState().prestige });
-            refreshDailyLogUI();
-            renderTimeline();
-            showToast(`Congratulations! You've entered Cycle ${getState().prestige}!`, "success", 5000);
-            playSound('achievement');
-        } else {
-            showToast("An error occurred while trying to prestige.", "error");
-            playSound('error');
-        }
+        if (prestigeLevel()) { trackGAEvent('prestige_completed', { new_cycle: getState().prestige }); refreshDailyLogUI(); renderTimeline(); showToast(`Congratulations! You've entered Cycle ${getState().prestige}!`, "success", 5000); playSound('achievement'); }
+        else { showToast("An error occurred while trying to prestige.", "error"); playSound('error'); }
     }
 }
-
 function handleSaveHabitPlan(event) {
-    event.preventDefault();
-    handleInteractionForAudio();
-    const form = event.target.closest('form');
-    if (!form) return;
-    const formData = new FormData(form);
-    const planId = formData.get('planId') || null;
-    const planData = {
-        id: planId || crypto.randomUUID(),
-        pillarId: formData.get('pillarId'),
-        activityDescription: formData.get('activityDescription')?.trim(),
-        type: formData.get('planType'),
-        cue: formData.get('planType') === 'intention' ? formData.get('cue')?.trim() : null,
-        anchorHabit: formData.get('planType') === 'stacking' ? formData.get('anchorHabit')?.trim() : null,
-        secondaryPillarId: formData.get('planType') === 'stacking' ? (formData.get('secondaryPillarId') || null) : null,
-    };
+    event.preventDefault(); handleInteractionForAudio(); const form = event.target.closest('form'); if (!form) return;
+    const formData = new FormData(form); const planId = formData.get('planId') || null;
+    const planData = { id: planId || crypto.randomUUID(), pillarId: formData.get('pillarId'), activityDescription: formData.get('activityDescription')?.trim(), type: formData.get('planType'), cue: formData.get('planType') === 'intention' ? formData.get('cue')?.trim() : null, anchorHabit: formData.get('planType') === 'stacking' ? formData.get('anchorHabit')?.trim() : null, secondaryPillarId: formData.get('planType') === 'stacking' ? (formData.get('secondaryPillarId') || null) : null, };
     let isValid = true, errorMessage = '';
     if (!planData.pillarId) { isValid = false; errorMessage = "Please select a primary pillar."; }
     else if (!planData.activityDescription) { isValid = false; errorMessage = "Please describe the activity."; }
     else if (planData.type === 'intention' && !planData.cue) { isValid = false; errorMessage = "Please provide the 'When/If' cue."; }
     else if (planData.type === 'stacking' && !planData.anchorHabit) { isValid = false; errorMessage = "Please provide the 'After/Before' anchor habit."; }
     if (!isValid) { showToast(errorMessage, "error"); playSound('error'); return; }
-    if (saveHabitPlan(planData)) {
-        trackGAEvent(planId ? 'habit_plan_updated' : 'habit_plan_saved', { plan_type: planData.type });
-        showToast(`Habit plan ${planId ? 'updated' : 'saved'}!`, "success");
-        playSound('save', 'D5', '8n');
-        resetHabitPlanForm();
-        renderSavedHabitPlans();
-    } else { showToast("Error saving habit plan.", "error"); playSound('error'); }
+    if (saveHabitPlan(planData)) { trackGAEvent(planId ? 'habit_plan_updated' : 'habit_plan_saved', { plan_type: planData.type }); showToast(`Habit plan ${planId ? 'updated' : 'saved'}!`, "success"); playSound('save', 'D5', '8n'); resetHabitPlanForm(); renderSavedHabitPlans(); }
+    else { showToast("Error saving habit plan.", "error"); playSound('error'); }
 }
-
 function handleDeleteHabitPlan(planId) {
-    handleInteractionForAudio();
-    if (!planId) return;
+    handleInteractionForAudio(); if (!planId) return;
     const planName = getState().habitPlans?.[planId]?.activityDescription || 'this plan';
     if (confirm(`Delete plan: "${escapeHtml(planName)}"?`)) {
-        if (deleteHabitPlan(planId)) {
-            trackGAEvent('habit_plan_deleted');
-            showToast("Habit plan deleted.", "success");
-            playSound('delete', 'C3', '8n');
-            resetHabitPlanForm();
-            renderSavedHabitPlans();
-        } else { showToast("Could not find plan to delete.", "error"); playSound('error'); }
+        if (deleteHabitPlan(planId)) { trackGAEvent('habit_plan_deleted'); showToast("Habit plan deleted.", "success"); playSound('delete', 'C3', '8n'); resetHabitPlanForm(); renderSavedHabitPlans(); }
+        else { showToast("Could not find plan to delete.", "error"); playSound('error'); }
     }
 }
-
 function handleSaveName(fromOnboarding = false) {
-    handleInteractionForAudio();
-    const inputId = fromOnboarding ? 'onboarding-name-input' : 'name-input';
-    const nameInput = document.getElementById(inputId);
-    if (!nameInput) return false;
+    handleInteractionForAudio(); const inputId = fromOnboarding ? 'onboarding-name-input' : 'name-input';
+    const nameInput = document.getElementById(inputId); if (!nameInput) return false;
     const name = nameInput.value.trim();
     if (name) {
         setUserName(name);
-        if (!fromOnboarding) {
-            trackGAEvent('user_name_set', { source: 'name_prompt_modal'});
-            closeNamePromptModal(); showToast(`Welcome, ${escapeHtml(name)}!`, "success"); refreshDailyLogUI();
-        } else {
-            trackGAEvent('user_name_set', { source: 'onboarding'});
-        }
+        if (!fromOnboarding) { trackGAEvent('user_name_set', { source: 'name_prompt_modal'}); closeNamePromptModal(); showToast(`Welcome, ${escapeHtml(name)}!`, "success"); refreshDailyLogUI(); }
+        else { trackGAEvent('user_name_set', { source: 'onboarding'}); }
         playSound('save', 'G5', '8n'); return true;
     } else { showToast("Please enter your name.", "info"); playSound('error'); nameInput.focus(); return false; }
 }
-
 function handleCompleteOnboarding() {
-    handleInteractionForAudio();
-    if (!handleSaveName(true)) return;
+    handleInteractionForAudio(); if (!handleSaveName(true)) return;
     const selectedMode = document.querySelector('input[name="onboardingMode"]:checked')?.value || 'full';
     let selectedPillarIds = [], validationPassed = true, simpleModeCount = null;
     if (selectedMode === 'simple') {
         const requiredCountInput = document.querySelector('input[name="simpleModePillarCount"]:checked');
-        const requiredCount = requiredCountInput ? parseInt(requiredCountInput.value) : 0;
-        simpleModeCount = requiredCount || null;
+        const requiredCount = requiredCountInput ? parseInt(requiredCountInput.value) : 0; simpleModeCount = requiredCount || null;
         const listContainer = document.getElementById('onboarding-pillar-list');
         const selectedCheckboxes = listContainer ? listContainer.querySelectorAll('input[type="checkbox"]:checked') : [];
         selectedPillarIds = Array.from(selectedCheckboxes).map(cb => cb.value);
@@ -577,130 +396,69 @@ function handleCompleteOnboarding() {
     if (validationPassed) {
         setUserMode(selectedMode);
         if (selectedMode === 'simple') { setSimpleModePillarCount(simpleModeCount); setSimpleModePillars(selectedPillarIds); }
-        setOnboardingComplete(true);
-        trackGAEvent('onboarding_completed', { mode_selected: selectedMode, simple_pillar_count: simpleModeCount });
-        hideOnboardingModal();
-        updateUIVisibilityForMode(selectedMode);
-        updatePlannerVisibility(getState().showPlanner);
-        refreshDailyLogUI();
-        showToast("Setup complete! Welcome to WellSpring.", "success");
-        playSound('achievement');
+        setOnboardingComplete(true); trackGAEvent('onboarding_completed', { mode_selected: selectedMode, simple_pillar_count: simpleModeCount });
+        hideOnboardingModal(); updateUIVisibilityForMode(selectedMode); updatePlannerVisibility(getState().showPlanner); refreshDailyLogUI();
+        showToast("Setup complete! Welcome to WellSpring.", "success"); playSound('achievement');
     }
 }
-
 function handleSaveSettings(event) {
-    event.preventDefault();
-    handleInteractionForAudio();
-    const form = document.getElementById('settings-form');
-    if (!form) { showToast("Error saving settings.", "error"); return; }
-    const formData = new FormData(form);
-    const selectedMode = formData.get('settingsMode');
-    const showPlannerSetting = formData.get('settingsShowPlanner') === 'on';
-    const newName = formData.get('settingsUserName')?.trim();
+    event.preventDefault(); handleInteractionForAudio(); const form = document.getElementById('settings-form'); if (!form) { showToast("Error saving settings.", "error"); return; }
+    const formData = new FormData(form); const selectedMode = formData.get('settingsMode'); const showPlannerSetting = formData.get('settingsShowPlanner') === 'on'; const newName = formData.get('settingsUserName')?.trim();
     let simpleModeCount = null, selectedPillarIds = [], validationPassed = true;
     if (selectedMode === 'simple') {
-        const requiredCountValue = formData.get('settingsSimpleModePillarCount');
-        simpleModeCount = requiredCountValue ? parseInt(requiredCountValue) : null;
+        const requiredCountValue = formData.get('settingsSimpleModePillarCount'); simpleModeCount = requiredCountValue ? parseInt(requiredCountValue) : null;
         selectedPillarIds = formData.getAll('settingsPillars');
         if (!simpleModeCount || ![3, 5, 7].includes(simpleModeCount)) { showToast("Invalid pillar count selected for Simple Mode.", "error"); playSound('error'); validationPassed = false; }
         else if (selectedPillarIds.length !== simpleModeCount) { showToast(`Please select exactly ${simpleModeCount} pillars for Simple Mode.`, "error"); playSound('error'); validationPassed = false; }
     }
     if (validationPassed) {
-        setUserName(newName);
-        setUserMode(selectedMode);
-        setShowPlanner(showPlannerSetting);
+        setUserName(newName); setUserMode(selectedMode); setShowPlanner(showPlannerSetting);
         if (selectedMode === 'simple') { setSimpleModePillarCount(simpleModeCount); setSimpleModePillars(selectedPillarIds); }
         else { setSimpleModePillarCount(null); setSimpleModePillars([]); }
-        trackGAEvent('settings_saved', {
-            mode_changed_to: selectedMode,
-            show_planner: showPlannerSetting,
-            name_updated: !!(newName && newName !== getState().userName)
-        });
-        updateUIVisibilityForMode(selectedMode);
-        updatePlannerVisibility(showPlannerSetting);
-        refreshDailyLogUI();
-        hideSettingsModal();
-        showToast("Settings saved successfully!", "success");
-        playSound('save', 'F5', '8n');
+        trackGAEvent('settings_saved', { mode_changed_to: selectedMode, show_planner: showPlannerSetting, name_updated: !!(newName && newName !== getState().userName) });
+        updateUIVisibilityForMode(selectedMode); updatePlannerVisibility(showPlannerSetting); refreshDailyLogUI(); hideSettingsModal();
+        showToast("Settings saved successfully!", "success"); playSound('save', 'F5', '8n');
     }
 }
-
 function updatePlannerVisibility(show) {
-    const plannerSection = document.querySelector('.habit-planner-section');
-    const plannerToggleBtn = document.getElementById('habit-planner-toggle');
+    const plannerSection = document.querySelector('.habit-planner-section'); const plannerToggleBtn = document.getElementById('habit-planner-toggle');
     if (plannerSection && plannerToggleBtn) {
         const shouldBeVisible = show && (getState().userMode !== 'simple');
         plannerSection.style.display = shouldBeVisible ? 'block' : 'none';
-        if (!shouldBeVisible && plannerToggleBtn.getAttribute('aria-expanded') === 'true') {
-            toggleCollapsibleSection(plannerToggleBtn, 'habit-planner-content');
-        }
+        if (!shouldBeVisible && plannerToggleBtn.getAttribute('aria-expanded') === 'true') { toggleCollapsibleSection(plannerToggleBtn, 'habit-planner-content'); }
     }
 }
-
 function handleEditNoteClick(noteId) {
-    handleInteractionForAudio();
-    const timeline = getState().timeline;
-    const noteEntry = timeline.find(entry => entry.type === 'note' && entry.noteId === noteId);
+    handleInteractionForAudio(); const timeline = getState().timeline; const noteEntry = timeline.find(entry => entry.type === 'note' && entry.noteId === noteId);
     if (!noteEntry) { showToast("Could not find the note to edit.", "error"); playSound('error'); return; }
-    const currentText = noteEntry.text;
-    const newText = prompt("Edit your note:", currentText);
+    const currentText = noteEntry.text; const newText = prompt("Edit your note:", currentText);
     if (newText !== null && newText.trim() !== currentText.trim()) {
-        if (updateNoteInTimeline(noteId, newText.trim())) {
-            trackGAEvent('note_edited');
-            showToast("Note updated successfully!", "success");
-            playSound('save', 'E5', '16n');
-            renderTimeline();
-        } else { showToast("Failed to update note. It might have been deleted.", "error"); playSound('error'); renderTimeline(); }
-    } else if (newText !== null && newText.trim() === currentText.trim()) {
-        showToast("No changes made to the note.", "info");
-    } else {
-        showToast("Note edit cancelled.", "info");
-    }
+        if (updateNoteInTimeline(noteId, newText.trim())) { trackGAEvent('note_edited'); showToast("Note updated successfully!", "success"); playSound('save', 'E5', '16n'); renderTimeline(); }
+        else { showToast("Failed to update note. It might have been deleted.", "error"); playSound('error'); renderTimeline(); }
+    } else if (newText !== null && newText.trim() === currentText.trim()) { showToast("No changes made to the note.", "info"); }
+    else { showToast("Note edit cancelled.", "info"); }
 }
-
 function handleDeleteNoteClick(noteId) {
     handleInteractionForAudio();
     if (confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
-        if (deleteNoteFromTimeline(noteId)) {
-            trackGAEvent('note_deleted');
-            showToast("Note deleted successfully.", "success");
-            playSound('delete', 'C3', '8n');
-            renderTimeline();
-        } else { showToast("Failed to delete note. It might have already been deleted.", "error"); playSound('error'); renderTimeline(); }
-    } else {
-        showToast("Note deletion cancelled.", "info");
-    }
+        if (deleteNoteFromTimeline(noteId)) { trackGAEvent('note_deleted'); showToast("Note deleted successfully.", "success"); playSound('delete', 'C3', '8n'); renderTimeline(); }
+        else { showToast("Failed to delete note. It might have already been deleted.", "error"); playSound('error'); renderTimeline(); }
+    } else { showToast("Note deletion cancelled.", "info"); }
 }
-
 function handleTouchStart(event) {
-    const targetElement = event.target;
-    const allowScrollElements = ['textarea', 'select', '.calendar-grid', '.timeline-entries', '.achievement-board-grid', '.guide-content-inner', '#saved-plans-display', '.pillar-checkbox-grid', '.modal-content'];
-    if (allowScrollElements.some(selector => targetElement.closest(selector))) {
-        touchStartX = null; return;
-    }
-    touchStartX = event.touches[0].clientX;
-    touchStartY = event.touches[0].clientY;
-    touchEndX = touchStartX; touchEndY = touchStartY;
+    const targetElement = event.target; const allowScrollElements = ['textarea', 'select', '.calendar-grid', '.timeline-entries', '.achievement-board-grid', '.guide-content-inner', '#saved-plans-display', '.pillar-checkbox-grid', '.modal-content'];
+    if (allowScrollElements.some(selector => targetElement.closest(selector))) { touchStartX = null; return; }
+    touchStartX = event.touches[0].clientX; touchStartY = event.touches[0].clientY; touchEndX = touchStartX; touchEndY = touchStartY;
 }
-function handleTouchMove(event) {
-    if (touchStartX === null) return;
-    touchEndX = event.touches[0].clientX;
-    touchEndY = event.touches[0].clientY;
-}
+function handleTouchMove(event) { if (touchStartX === null) return; touchEndX = event.touches[0].clientX; touchEndY = event.touches[0].clientY; }
 function handleTouchEnd(event) {
-    if (touchStartX === null) return;
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
+    if (touchStartX === null) return; const deltaX = touchEndX - touchStartX; const deltaY = touchEndY - touchStartY;
     if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_MAX_VERTICAL) {
-        handleInteractionForAudio();
-        const tabButtons = Array.from(document.querySelectorAll('.nav-tabs .tab-button:not([aria-hidden="true"])'));
-        const currentTabIndex = tabButtons.findIndex(btn => btn.classList.contains('active'));
-        let nextTabIndex = -1;
-        if (deltaX < 0) { nextTabIndex = Math.min(tabButtons.length - 1, currentTabIndex + 1); }
-        else { nextTabIndex = Math.max(0, currentTabIndex - 1); }
+        handleInteractionForAudio(); const tabButtons = Array.from(document.querySelectorAll('.nav-tabs .tab-button:not([aria-hidden="true"])'));
+        const currentTabIndex = tabButtons.findIndex(btn => btn.classList.contains('active')); let nextTabIndex = -1;
+        if (deltaX < 0) { nextTabIndex = Math.min(tabButtons.length - 1, currentTabIndex + 1); } else { nextTabIndex = Math.max(0, currentTabIndex - 1); }
         if (nextTabIndex !== -1 && nextTabIndex !== currentTabIndex) {
-            const nextTabButton = tabButtons[nextTabIndex];
-            const nextTabId = nextTabButton?.dataset.tab;
+            const nextTabButton = tabButtons[nextTabIndex]; const nextTabId = nextTabButton?.dataset.tab;
             if (nextTabId) {
                  if (nextTabId === 'calendar') { handleShowCalendarTab(); }
                  else if (nextTabId === 'journey') { renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
@@ -712,14 +470,7 @@ function handleTouchEnd(event) {
     }
     touchStartX = 0; touchStartY = 0; touchEndX = 0; touchEndY = 0;
 }
-
-function appShowSettingsModal() {
-    handleInteractionForAudio();
-    uiShowSettingsModal();
-    updateNotificationPermissionStatusDisplay();
-    trackGAEvent('settings_opened');
-    playSound('click', 'B4', '16n');
-}
+function appShowSettingsModal() { handleInteractionForAudio(); uiShowSettingsModal(); updateNotificationPermissionStatusDisplay(); trackGAEvent('settings_opened'); playSound('click', 'B4', '16n'); }
 
 function setupEventListeners() {
     console.log("[App] Setting up event listeners...");
