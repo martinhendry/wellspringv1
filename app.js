@@ -2,14 +2,8 @@
 
 /**
  * Main application logic for WellSpring.
- * Initializes the app, sets up event listeners, and coordinates interactions
- * between the state, UI modules, and other logic components.
- * *** MODIFIED: Added Service Worker registration. ***
- * *** MODIFIED: Added Edit/Delete functionality for timeline notes. ***
- * *** MODIFIED: Improved feedback for adding notes by scrolling timeline to top. ***
- * *** MODIFIED: Added basic GA4 event tracking. ***
- * *** MODIFIED: Added Notification permission logic and client-side reminders. ***
- * *** MODIFIED: Deferred UI initialization for non-active tabs. ***
+ * ... (other comments)
+ * *** MODIFIED: More robust deferred UI initialization for all tabs. ***
  */
 
 // --- Core Modules ---
@@ -53,25 +47,21 @@ const DAYS_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
 // --- State ---
 let saveTimeoutId = null;
-let currentAnalyticsView = 'stats';
+let currentAnalyticsView = 'stats'; // Default analytics view
 let touchStartX = 0;
 let touchStartY = 0;
 let touchEndX = 0;
 let touchEndY = 0;
-// --- START NEW: Flags for one-time UI initializations ---
 let journeyTabInitialized = false;
 let achievementsTabInitialized = false;
-// Planner select is initialized on expand, calendar on tab show by handleShowCalendarTab
-// --- END NEW ---
+let calendarTabInitialized = false; // Added for calendar
+let analyticsTabInitialized = false; // Added for analytics
 
 
 // --- GA4 Event Tracking Helper ---
 function trackGAEvent(eventName, eventParams = {}) {
     if (typeof gtag === 'function') {
         gtag('event', eventName, eventParams);
-        // console.log(`[GA4] Event tracked: ${eventName}`, eventParams); // Keep for debugging if needed
-    } else {
-        // console.warn(`[GA4] gtag function not found. Event not tracked: ${eventName}`); // Keep for debugging
     }
 }
 
@@ -79,38 +69,25 @@ function trackGAEvent(eventName, eventParams = {}) {
 function updateNotificationPermissionStatusDisplay() {
     const statusEl = document.getElementById('notification-permission-status');
     const enableBtn = document.getElementById('enable-notifications-btn');
-    if (!statusEl || !enableBtn) {
-        // console.warn("[App] Notification status/button elements not found in settings for display update.");
-        return;
-    }
-
+    if (!statusEl || !enableBtn) return;
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
         statusEl.textContent = 'Status: Reminders not supported by this browser.';
         statusEl.style.color = 'var(--accent)';
-        enableBtn.disabled = true;
-        enableBtn.textContent = 'Not Supported';
-        return;
+        enableBtn.disabled = true; enableBtn.textContent = 'Not Supported'; return;
     }
-
     switch (Notification.permission) {
         case 'granted':
             statusEl.textContent = 'Status: Reminders Enabled.';
             statusEl.style.color = 'var(--secondary)';
-            enableBtn.textContent = 'Reminders Active';
-            enableBtn.disabled = true;
-            break;
+            enableBtn.textContent = 'Reminders Active'; enableBtn.disabled = true; break;
         case 'denied':
             statusEl.textContent = 'Status: Reminders Blocked by browser.';
             statusEl.style.color = 'var(--accent)';
-            enableBtn.textContent = 'Enable Reminders (Blocked)';
-            enableBtn.disabled = true;
-            break;
-        default: // 'default' (i.e., not yet asked)
+            enableBtn.textContent = 'Enable Reminders (Blocked)'; enableBtn.disabled = true; break;
+        default:
             statusEl.textContent = 'Status: Reminders Not Yet Enabled.';
             statusEl.style.color = 'var(--text-muted)';
-            enableBtn.textContent = 'Enable Reminders';
-            enableBtn.disabled = false;
-            break;
+            enableBtn.textContent = 'Enable Reminders'; enableBtn.disabled = false; break;
     }
 }
 
@@ -118,49 +95,30 @@ async function requestNotificationPermission() {
     handleInteractionForAudio();
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
         showToast("This browser does not support notifications.", "error");
-        playSound('error');
-        updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_attempt', { supported: false });
-        return null;
+        playSound('error'); updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_attempt', { supported: false }); return null;
     }
-
     if (Notification.permission === 'granted') {
         showToast("Reminders are already enabled!", "info");
-        updateNotificationPermissionStatusDisplay();
-        return 'granted';
+        updateNotificationPermissionStatusDisplay(); return 'granted';
     }
-
     if (Notification.permission === 'denied') {
         showToast("Reminders are blocked. Please enable them in your browser/OS settings.", "error");
-        playSound('error');
-        updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_blocked_interaction');
-        return 'denied';
+        playSound('error'); updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_blocked_interaction'); return 'denied';
     }
-
     try {
         const permission = await Notification.requestPermission();
         trackGAEvent('notification_permission_requested', { permission_status: permission });
-
-        if (permission === 'granted') {
-            showToast("Great! Reminders enabled.", "success");
-            playSound('save');
-        } else if (permission === 'denied') {
-            showToast("Reminders permission denied. You can change this in browser settings.", "info");
-            playSound('click');
-        } else { // 'default' - user dismissed the prompt
-            showToast("Reminder permission not granted (prompt dismissed).", "info");
-            playSound('click');
-        }
-        updateNotificationPermissionStatusDisplay();
-        return permission;
+        if (permission === 'granted') { showToast("Great! Reminders enabled.", "success"); playSound('save'); }
+        else if (permission === 'denied') { showToast("Reminders permission denied. You can change this in browser settings.", "info"); playSound('click'); }
+        else { showToast("Reminder permission not granted (prompt dismissed).", "info"); playSound('click'); }
+        updateNotificationPermissionStatusDisplay(); return permission;
     } catch (error) {
         console.error("[App] Error requesting notification permission:", error);
         showToast("Could not request notification permission.", "error");
-        playSound('error');
-        updateNotificationPermissionStatusDisplay();
-        trackGAEvent('notification_permission_error');
-        return 'error'; // Or null, depending on how you want to handle errors
+        playSound('error'); updateNotificationPermissionStatusDisplay();
+        trackGAEvent('notification_permission_error'); return 'error';
     }
 }
 
@@ -184,50 +142,36 @@ async function showLocalNotification(title, options) {
 function checkAndShowBackupReminder() {
     const state = getState();
     if (!state.isOnboardingComplete || Notification.permission !== 'granted') return;
-
     const lastReminderTime = state.lastBackupReminderShown ? new Date(state.lastBackupReminderShown).getTime() : 0;
     const lastExportTime = state.lastDataExportTime ? new Date(state.lastDataExportTime).getTime() : 0;
     const relevantLastTime = Math.max(lastReminderTime, lastExportTime);
     const now = new Date().getTime();
     const daysSinceLastRelevant = (now - relevantLastTime) / DAYS_IN_MILLISECONDS;
-
     const totalSavedDays = Object.keys(state.savedDays || {}).length;
-
     if (totalSavedDays >= MIN_SAVED_DAYS_FOR_BACKUP_REMINDER && daysSinceLastRelevant >= BACKUP_REMINDER_INTERVAL_DAYS) {
-        console.log("[App] Backup reminder conditions met. Attempting to show notification.");
         showLocalNotification('WellSpring Backup Reminder', {
             body: `It's been about ${BACKUP_REMINDER_INTERVAL_DAYS} days. Consider backing up your WellSpring data to keep it safe!`,
-            icon: 'assets/favicon.png', // Use your app icon
-            badge: 'assets/favicon.png',
-            tag: 'wellspring-backup-reminder', // So it replaces any existing backup reminder
-            data: { url: './index.html#settings-modal' } // Link to open settings or a specific part of it
+            icon: 'assets/favicon.png', badge: 'assets/favicon.png',
+            tag: 'wellspring-backup-reminder', data: { url: './index.html#settings-modal' }
         });
-        setLastBackupReminderShown(); // Update state that reminder was shown
+        setLastBackupReminderShown();
     }
 }
 
 function checkAndShowMissedDayReminder() {
     const state = getState();
     if (!state.isOnboardingComplete || Notification.permission !== 'granted' || !state.savedDays) return;
-
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const yesterdayString = yesterday.toISOString().split('T')[0];
-
     const firstUsage = findFirstUsageDate(state);
-    if (firstUsage && yesterdayString < firstUsage) {
-        return; // Don't remind for days before the app was first used.
-    }
-
-    // Don't show if yesterday was saved OR if current view is already yesterday (user might be actively logging it)
+    if (firstUsage && yesterdayString < firstUsage) return;
     if (!state.savedDays[yesterdayString] && state.currentDate !== yesterdayString) {
-        console.log(`[App] Missed day reminder conditions met for ${yesterdayString}. Attempting to show notification.`);
         showLocalNotification('WellSpring Catch-up', {
             body: `Did you forget to log for ${escapeHtml(formatDate(yesterdayString))}? Tap to log now!`,
-            icon: 'assets/favicon.png',
-            badge: 'assets/favicon.png',
-            tag: 'wellspring-missed-day-reminder-' + yesterdayString, // Unique tag per day
+            icon: 'assets/favicon.png', badge: 'assets/favicon.png',
+            tag: 'wellspring-missed-day-reminder-' + yesterdayString,
             data: { url: `./index.html?date=${yesterdayString}` }
         });
     }
@@ -241,24 +185,19 @@ function init() {
     loadState();
     initTheme();
     initializeAudio();
-    registerServiceWorker(); // Ensure this function is defined below
+    registerServiceWorker();
     updateAudioToggleButton();
-
-    // populatePillarSelect(); // Moved to planner expand
-    // setupAutoResizeTextarea(); // Moved to journey tab activation
-
     setupImportListener();
+
     const initialStateData = getState();
     updateUIVisibilityForMode(initialStateData.userMode);
-    updatePlannerVisibility(initialStateData.showPlanner);
+    updatePlannerVisibility(initialStateData.showPlanner); // Planner visibility is handled by its toggle
     resetDateDisplay();
 
     showTab('daily'); // Show initial tab
     trackGAEvent('view_tab', { tab_id: 'daily' });
-
-    // Defer initial daily log refresh to ensure DOM is ready
-    requestAnimationFrame(() => {
-        refreshDailyLogUI(); // Render daily log
+    requestAnimationFrame(() => { // Defer initial daily log refresh
+        refreshDailyLogUI();
     });
 
     setupEventListeners();
@@ -267,14 +206,10 @@ function init() {
     const urlParams = new URLSearchParams(window.location.search);
     const dateParam = urlParams.get('date');
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-        console.log(`[App] Date parameter found in URL: ${dateParam}. Setting current date.`);
         updateCurrentDate(dateParam);
         resetDateDisplay();
-        requestAnimationFrame(() => { // Also defer this refresh
-             refreshDailyLogUI();
-        });
-        showTab('daily');
-        // window.history.replaceState({}, document.title, "./index.html");
+        requestAnimationFrame(() => { refreshDailyLogUI(); });
+        showTab('daily'); // Ensure daily tab is active if date param is used
     }
 
     if (!initialStateData.isOnboardingComplete) {
@@ -286,7 +221,6 @@ function init() {
             showNamePromptModal();
             trackGAEvent('name_prompt_shown');
         }
-        // refreshDailyLogUI(); // Already called via requestAnimationFrame
         setTimeout(() => {
             if (Notification.permission === 'granted') {
                 checkAndShowBackupReminder();
@@ -299,24 +233,16 @@ function init() {
     console.log("[App] WellSpring Initialization complete.");
 }
 
-// --- Service Worker Registration ---
-function registerServiceWorker() { // Ensure this function is defined
+function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
-                .then(registration => {
-                    console.log('[App] Service Worker registered successfully with scope:', registration.scope);
-                })
-                .catch(error => {
-                    console.error('[App] Service Worker registration failed:', error);
-                });
+                .then(registration => { console.log('[App] Service Worker registered successfully with scope:', registration.scope); })
+                .catch(error => { console.error('[App] Service Worker registration failed:', error); });
         });
-    } else {
-        console.warn('[App] Service workers are not supported in this browser.');
-    }
+    } else { console.warn('[App] Service workers are not supported in this browser.'); }
 }
 
-// --- Debounced Saving ---
 function setupDebouncedSave() {
     document.removeEventListener('stateChanged', handleStateChangeForSave);
     document.addEventListener('stateChanged', handleStateChangeForSave);
@@ -330,8 +256,8 @@ function handleStateChangeForSave(e) {
     }, SAVE_DELAY);
 }
 
-
 // --- Event Handlers ---
+// ... (Most event handlers remain the same, only tab switching and related init calls are modified)
 function handleDateChangeInput(newDateString) {
     handleInteractionForAudio();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateString)) { showToast("Invalid date selected.", "error"); resetDateDisplay(); return; }
@@ -378,9 +304,9 @@ function handleSaveDay() {
         const hasWeeklyNote = updatedState.timeline.some(e => e?.type === 'note' && e.text?.toLowerCase().includes('#weeklyreflection') && getWeekNumber(e.date?.split('T')[0]) === weekId);
         const hasAnyNoteToday = updatedState.timeline.some(e => e?.type === 'note' && e.date?.startsWith(currentDate));
         if (isSunday && noteTextArea && journeyTabButton && !hasWeeklyNote) {
-            setTimeout(() => { if (confirm("It's Sunday! Would you like to add a weekly reflection note now?")) { showTab('journey'); trackGAEvent('view_tab', { tab_id: 'journey', source: 'sunday_prompt' }); updateNoteHeaderPrompt(); noteTextArea.value = "#WeeklyReflection "; noteTextArea.focus({ preventScroll: true }); requestAnimationFrame(() => { noteTextArea.style.height = 'auto'; noteTextArea.style.height = `${noteTextArea.scrollHeight}px`; }); } }, 600);
+            setTimeout(() => { if (confirm("It's Sunday! Would you like to add a weekly reflection note now?")) { showTab('journey'); trackGAEvent('view_tab', { tab_id: 'journey', source: 'sunday_prompt' }); requestAnimationFrame(() => { updateNoteHeaderPrompt(); if (!journeyTabInitialized) { setupAutoResizeTextarea(); journeyTabInitialized = true; } renderTimeline(); updateTimelineControls(); noteTextArea.value = "#WeeklyReflection "; noteTextArea.focus({ preventScroll: true }); noteTextArea.style.height = 'auto'; noteTextArea.style.height = `${noteTextArea.scrollHeight}px`; }); } }, 600);
         } else if (!isSunday && noteTextArea && journeyTabButton && !hasAnyNoteToday) {
-             setTimeout(() => { if (confirm("Day saved! Add a quick gratitude or reflection note to your Journey?")) { showTab('journey'); trackGAEvent('view_tab', { tab_id: 'journey', source: 'save_day_prompt' }); updateNoteHeaderPrompt(); noteTextArea.value = ""; noteTextArea.focus({ preventScroll: true }); requestAnimationFrame(() => { noteTextArea.style.height = 'auto'; noteTextArea.style.height = `${noteTextArea.scrollHeight}px`; }); } }, 600);
+             setTimeout(() => { if (confirm("Day saved! Add a quick gratitude or reflection note to your Journey?")) { showTab('journey'); trackGAEvent('view_tab', { tab_id: 'journey', source: 'save_day_prompt' }); requestAnimationFrame(() => { updateNoteHeaderPrompt(); if (!journeyTabInitialized) { setupAutoResizeTextarea(); journeyTabInitialized = true; } renderTimeline(); updateTimelineControls(); noteTextArea.value = ""; noteTextArea.focus({ preventScroll: true }); noteTextArea.style.height = 'auto'; noteTextArea.style.height = `${noteTextArea.scrollHeight}px`; }); } }, 600);
         }
     } else { showToast("This day is already saved.", "info"); }
 }
@@ -519,11 +445,32 @@ function handleTouchEnd(event) {
         if (nextTabIndex !== -1 && nextTabIndex !== currentTabIndex) {
             const nextTabButton = tabButtons[nextTabIndex]; const nextTabId = nextTabButton?.dataset.tab;
             if (nextTabId) {
-                 if (nextTabId === 'calendar') { handleShowCalendarTab(); }
-                 else if (nextTabId === 'journey') { showTab(nextTabId); if (!journeyTabInitialized) { setupAutoResizeTextarea(); journeyTabInitialized = true; } renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
-                 else if (nextTabId === 'achievements') { showTab(nextTabId); if (!achievementsTabInitialized) { achievementsTabInitialized = true; } renderAchievementBoard(); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
-                 else { showTab(nextTabId); if (nextTabId === 'daily') { refreshDailyLogUI(); } trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });}
-                 playSound('navigate', deltaX < 0 ? 'E5' : 'C5', '16n');
+                // --- START MODIFICATION: Defer UI updates for swiped tabs ---
+                if (nextTabId === 'calendar') {
+                    handleShowCalendarTab(); // This function already handles its rendering logic
+                } else if (nextTabId === 'journey') {
+                    showTab(nextTabId);
+                    requestAnimationFrame(() => {
+                        if (!journeyTabInitialized) { setupAutoResizeTextarea(); journeyTabInitialized = true; }
+                        renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt();
+                    });
+                    trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });
+                } else if (nextTabId === 'achievements') {
+                    showTab(nextTabId);
+                    requestAnimationFrame(() => {
+                        if (!achievementsTabInitialized) { achievementsTabInitialized = true; }
+                        renderAchievementBoard();
+                    });
+                    trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });
+                } else { // For 'daily' or any other tabs
+                    showTab(nextTabId);
+                    if (nextTabId === 'daily') {
+                        requestAnimationFrame(() => { refreshDailyLogUI(); });
+                    }
+                    trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });
+                }
+                // --- END MODIFICATION ---
+                playSound('navigate', deltaX < 0 ? 'E5' : 'C5', '16n');
             }
         }
     }
@@ -538,9 +485,13 @@ function setupEventListeners() {
         toggleTheme((newTheme) => {
             trackGAEvent('theme_changed', { new_theme: newTheme });
             const analyticsContainer = document.getElementById('analytics-container');
-            if (analyticsContainer && analyticsContainer.style.display === 'block') switchAnalyticsView(currentAnalyticsView);
+            if (analyticsContainer && analyticsContainer.style.display === 'block') {
+                 requestAnimationFrame(() => switchAnalyticsView(currentAnalyticsView));
+            }
             const achievementsTab = document.getElementById('achievements');
-            if (achievementsTab?.classList.contains('active')) renderAchievementBoard();
+            if (achievementsTab?.classList.contains('active')) {
+                requestAnimationFrame(() => renderAchievementBoard());
+            }
         });
         playSound('click', 'E5', '16n');
     });
@@ -553,28 +504,32 @@ function setupEventListeners() {
             const tabId = e.target.dataset.tab;
             if (tabId) {
                 if (tabId === 'calendar') {
-                    handleShowCalendarTab();
+                    handleShowCalendarTab(); // This calls showTab and then renderCalendar (which should be fine)
                 } else if (tabId === 'journey') {
-                    showTab(tabId);
-                    if (!journeyTabInitialized) {
-                        setupAutoResizeTextarea();
-                        journeyTabInitialized = true;
-                    }
-                    renderTimeline();
-                    updateTimelineControls();
-                    updateNoteHeaderPrompt();
+                    showTab(tabId); // Show tab first
+                    requestAnimationFrame(() => { // Defer UI updates
+                        if (!journeyTabInitialized) {
+                            setupAutoResizeTextarea();
+                            journeyTabInitialized = true;
+                        }
+                        renderTimeline();
+                        updateTimelineControls();
+                        updateNoteHeaderPrompt();
+                    });
                     trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
                 } else if (tabId === 'achievements') {
-                    showTab(tabId);
-                    if (!achievementsTabInitialized) {
-                        achievementsTabInitialized = true;
-                    }
-                    renderAchievementBoard();
+                    showTab(tabId); // Show tab first
+                    requestAnimationFrame(() => { // Defer UI updates
+                        if (!achievementsTabInitialized) {
+                            achievementsTabInitialized = true;
+                        }
+                        renderAchievementBoard();
+                    });
                     trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
-                } else {
+                } else { // For 'daily' or any other tabs
                     showTab(tabId);
                     if (tabId === 'daily') {
-                        refreshDailyLogUI();
+                        requestAnimationFrame(() => { refreshDailyLogUI(); });
                     }
                     trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
                 }
@@ -601,8 +556,8 @@ function setupEventListeners() {
     document.getElementById('lock-button')?.addEventListener('click', handleSaveDay);
     document.getElementById('unlock-button')?.addEventListener('click', handleUnlockDay);
     document.getElementById('add-note-btn')?.addEventListener('click', handleAddNote);
-    document.getElementById('timeline-filter')?.addEventListener('change', (e) => { handleInteractionForAudio(); updateTimelineFilter(e.target.value); renderTimeline(); trackGAEvent('timeline_filter_changed', { filter_type: e.target.value }); playSound('click', 'D5', '16n'); });
-    document.getElementById('timeline-sort')?.addEventListener('change', (e) => { handleInteractionForAudio(); updateTimelineSortOrder(e.target.value); renderTimeline(); trackGAEvent('timeline_sort_changed', { sort_order: e.target.value }); playSound('click', 'E5', '16n'); });
+    document.getElementById('timeline-filter')?.addEventListener('change', (e) => { handleInteractionForAudio(); updateTimelineFilter(e.target.value); requestAnimationFrame(renderTimeline); trackGAEvent('timeline_filter_changed', { filter_type: e.target.value }); playSound('click', 'D5', '16n'); });
+    document.getElementById('timeline-sort')?.addEventListener('change', (e) => { handleInteractionForAudio(); updateTimelineSortOrder(e.target.value); requestAnimationFrame(renderTimeline); trackGAEvent('timeline_sort_changed', { sort_order: e.target.value }); playSound('click', 'E5', '16n'); });
     document.getElementById('prestige-button')?.addEventListener('click', handlePrestigeClick);
     document.getElementById('new-note-textarea')?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddNote(); } });
     document.getElementById('calendar-grid')?.addEventListener('click', (e) => {
@@ -611,11 +566,22 @@ function setupEventListeners() {
     });
     document.getElementById('prev-month-btn')?.addEventListener('click', () => {handleMonthChange(-1); trackGAEvent('calendar_month_changed', { direction: 'previous'}); });
     document.getElementById('next-month-btn')?.addEventListener('click', () => {handleMonthChange(1); trackGAEvent('calendar_month_changed', { direction: 'next'}); });
-    document.getElementById('view-analytics-btn')?.addEventListener('click', () => { handleInteractionForAudio(); toggleAnalyticsVisibility(); trackGAEvent('analytics_visibility_toggled', { visible: document.getElementById("analytics-container").style.display === "block" }); playSound('click', 'B4', '16n'); });
+    document.getElementById('view-analytics-btn')?.addEventListener('click', () => {
+        handleInteractionForAudio();
+        toggleAnalyticsVisibility(); // This function in analyticsUI.js should handle its own rendering logic
+        trackGAEvent('analytics_visibility_toggled', { visible: document.getElementById("analytics-container").style.display === "block" });
+        playSound('click', 'B4', '16n');
+    });
     document.getElementById('analytics-toggles')?.addEventListener('click', (e) => {
         if (e.target.matches('button')) {
             const view = e.target.dataset.view;
-            if (view && view !== currentAnalyticsView) { handleInteractionForAudio(); switchAnalyticsView(view); trackGAEvent('analytics_view_switched', { view_id: view }); playSound('click', 'G4', '16n'); }
+            if (view && view !== currentAnalyticsView) {
+                handleInteractionForAudio();
+                // switchAnalyticsView in analyticsUI.js handles rendering
+                requestAnimationFrame(() => switchAnalyticsView(view));
+                trackGAEvent('analytics_view_switched', { view_id: view });
+                playSound('click', 'G4', '16n');
+            }
         }
     });
     document.getElementById('achievement-board-grid')?.addEventListener('click', (e) => {
@@ -673,8 +639,8 @@ function setupEventListeners() {
         handleInteractionForAudio();
         const isExpanding = this.getAttribute('aria-expanded') === 'false';
         toggleCollapsibleSection(this, 'habit-planner-content', () => {
-            if (isExpanding) {
-                populatePillarSelect(); // Initialize planner selects on first expand
+            if (isExpanding) { // Only init planner UI if expanding and not already initialized
+                populatePillarSelect();
                 resetHabitPlanForm();
                 renderSavedHabitPlans();
             }
@@ -740,24 +706,27 @@ function setupEventListeners() {
     console.log("[App] All event listeners set up.");
 }
 
+// --- Calendar Specific Tab Handler ---
 function handleShowCalendarTab() {
-    toggleAnalyticsVisibility(false); // Ensure analytics is hidden
-    showTab('calendar');
-    trackGAEvent('view_tab', { tab_id: 'calendar', source: 'click_or_swipe' });
-    const state = getState();
-    if (state && state.currentMonth !== undefined && state.currentYear !== undefined) {
+    showTab('calendar'); // Show tab first
+    requestAnimationFrame(() => { // Defer rendering
+        toggleAnalyticsVisibility(false); // Ensure analytics is hidden
+        if (!calendarTabInitialized) {
+            // Any one-time calendar setup can go here
+            calendarTabInitialized = true;
+        }
+        const state = getState();
         const firstUsage = findFirstUsageDate(state);
         renderCalendar(state.currentMonth, state.currentYear, firstUsage, handleCalendarDayClick);
-    } else {
-        const now = new Date();
-        renderCalendar(now.getMonth(), now.getFullYear(), null, handleCalendarDayClick);
-    }
+    });
+    trackGAEvent('view_tab', { tab_id: 'calendar', source: 'click_or_swipe' });
 }
 
 function handleCalendarDayClick(dateStr) {
     handleInteractionForAudio();
-    handleDateChangeInput(dateStr); // This updates state and refreshes daily log UI
-    showTab('daily'); // Switch to daily log tab
+    handleDateChangeInput(dateStr);
+    showTab('daily');
+    requestAnimationFrame(() => { refreshDailyLogUI(); }); // Ensure daily log refreshes
     trackGAEvent('view_tab', { tab_id: 'daily', source: 'calendar_day_click' });
 }
 
@@ -772,8 +741,10 @@ function handleMonthChange(delta) {
     stateRef.currentMonth = newMonth;
     stateRef.currentYear = newYear;
     document.dispatchEvent(new CustomEvent('stateChanged', { detail: { action: 'changeMonth' } }));
-    const firstUsage = findFirstUsageDate(getState());
-    renderCalendar(newMonth, newYear, firstUsage, handleCalendarDayClick);
+    requestAnimationFrame(() => { // Defer rendering
+        const firstUsage = findFirstUsageDate(getState());
+        renderCalendar(newMonth, newYear, firstUsage, handleCalendarDayClick);
+    });
     playSound('navigate', delta > 0 ? 'E5' : 'C5', '16n');
 }
 
