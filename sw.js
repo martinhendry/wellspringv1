@@ -2,12 +2,11 @@
 
 // Define a unique cache name, including a version number.
 // Increment the version number when you update the cached files.
-const CACHE_NAME = 'wellspring-cache-v1';
+const CACHE_NAME = 'wellspring-cache-v1'; // Keep this consistent or update if assets change significantly
 
 // List of essential files to cache for the application shell.
-// Add all critical HTML, CSS, JavaScript, and essential assets (like the logo).
 const urlsToCache = [
-    '/', // Cache the root URL (often serves index.html)
+    '/',
     'index.html',
     'style.css',
     'app.js',
@@ -35,91 +34,65 @@ const urlsToCache = [
     // Assets
     'assets/wellspringlogo.png',
     'assets/favicon.png',
-    // External Libraries (if used offline - ensure correct versions)
+    // External Libraries
     'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
-    // Add Font Awesome webfonts if needed offline (check network tab for exact URLs)
+    // Consider caching Font Awesome webfonts if offline access is critical
     // e.g., 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-solid-900.woff2',
 ];
 
 // --- Event Listener: Install ---
-// Fired when the service worker is first installed or updated.
 self.addEventListener('install', event => {
     console.log('[Service Worker] Install event triggered');
-    // Perform install steps: Caching the application shell.
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
                 console.log('[Service Worker] Opened cache:', CACHE_NAME);
-                // Add all specified URLs to the cache.
-                // If any request fails, the installation fails.
                 return cache.addAll(urlsToCache);
             })
             .then(() => {
                 console.log('[Service Worker] All essential files cached successfully.');
-                // Force the waiting service worker to become the active service worker.
-                // This ensures updates are applied immediately on next load.
-                return self.skipWaiting();
+                return self.skipWaiting(); // Activate new SW immediately
             })
             .catch(error => {
                 console.error('[Service Worker] Caching failed during install:', error);
-                // Optional: You might want to prevent activation if caching fails critically.
             })
     );
 });
 
 // --- Event Listener: Activate ---
-// Fired when the service worker becomes active.
-// This is a good place to clean up old caches.
 self.addEventListener('activate', event => {
     console.log('[Service Worker] Activate event triggered');
     event.waitUntil(
         caches.keys().then(cacheNames => {
-            // Filter out caches that are not the current cache name.
             return Promise.all(
                 cacheNames.filter(cacheName => {
-                    return cacheName !== CACHE_NAME;
+                    return cacheName !== CACHE_NAME; // Delete old caches
                 }).map(cacheName => {
-                    // Delete the old caches.
                     console.log('[Service Worker] Deleting old cache:', cacheName);
                     return caches.delete(cacheName);
                 })
             );
         }).then(() => {
             console.log('[Service Worker] Old caches cleaned up.');
-            // Claim clients immediately so the active service worker controls the page
-            // without needing a reload.
-            return self.clients.claim();
+            return self.clients.claim(); // Take control of open clients
         })
     );
 });
 
-// --- Event Listener: Fetch ---
-// Fired for every network request made by the page.
-// Implements a Cache-First strategy for cached assets.
+// --- Event Listener: Fetch (Cache-First Strategy) ---
 self.addEventListener('fetch', event => {
-    // console.log('[Service Worker] Fetch event for:', event.request.url); // Log all fetches (can be verbose)
-
-    // Use respondWith to hijack the request and provide a custom response.
     event.respondWith(
-        // Try to find the response in the cache first.
         caches.match(event.request)
             .then(response => {
-                // If a response is found in the cache, return it.
                 if (response) {
-                    // console.log('[Service Worker] Serving from cache:', event.request.url);
-                    return response;
+                    return response; // Serve from cache
                 }
-
-                // If the request is not in the cache, fetch it from the network.
-                // console.log('[Service Worker] Fetching from network:', event.request.url);
-                return fetch(event.request)
+                return fetch(event.request) // Fetch from network if not in cache
                     .then(networkResponse => {
-                        // Optional: Cache dynamically fetched resources if needed.
-                        // Be careful not to cache everything, especially API responses
-                        // unless you have a specific strategy for them.
-                        // Example: Caching images on the fly
-                        // if (networkResponse.ok && networkResponse.type === 'basic' && event.request.url.match(/\.(png|jpg|jpeg|gif|svg|webp)$/)) {
+                        // Optional: Cache dynamically fetched resources if needed
+                        // Example: Caching images (ensure it's appropriate for your app)
+                        // if (networkResponse.ok && networkResponse.type === 'basic' && event.request.url.match(/\.(png|jpg|jpeg|gif|svg|webp)$/i)) {
                         //     const responseToCache = networkResponse.clone();
                         //     caches.open(CACHE_NAME).then(cache => {
                         //         cache.put(event.request, responseToCache);
@@ -128,16 +101,101 @@ self.addEventListener('fetch', event => {
                         return networkResponse;
                     })
                     .catch(error => {
-                        // Handle network errors (e.g., offline)
                         console.warn(`[Service Worker] Network fetch failed for ${event.request.url}:`, error);
-                        // Optional: Return a custom offline fallback page or resource here.
-                        // For example, for navigation requests:
+                        // Optional: Return a custom offline fallback page for navigation requests
                         // if (event.request.mode === 'navigate') {
-                        //     return caches.match('/offline.html');
+                        //     return caches.match('/offline.html'); // You'd need to cache an offline.html
                         // }
-                        // For other requests, just let the error propagate.
-                        // return new Response("Network error occurred", { status: 408, headers: { 'Content-Type': 'text/plain' } });
                     });
             })
+    );
+});
+
+// --- START: Notification Event Listeners ---
+
+/**
+ * Handles incoming push messages.
+ * This is where server-sent push messages would be processed.
+ * For client-side triggered notifications, this event might not be directly used
+ * unless you specifically send a "push" to the service worker from the client.
+ */
+self.addEventListener('push', event => {
+    console.log('[Service Worker] Push event received.');
+
+    // Default notification options if no data is in the push event
+    let title = 'WellSpring Reminder';
+    let options = {
+        body: 'You have a new message from WellSpring!',
+        icon: 'assets/favicon.png', // Path to a small icon
+        badge: 'assets/favicon.png', // Path to a badge icon (often monochrome)
+        vibrate: [100, 50, 100], // Vibration pattern
+        data: { // Custom data to pass to notificationclick handler
+            url: '/', // URL to open on click
+        },
+        tag: 'wellspring-general-push' // Tag to group notifications or replace existing ones
+    };
+
+    // Attempt to parse data from the push event, if any
+    if (event.data) {
+        try {
+            const pushData = event.data.json();
+            console.log('[Service Worker] Push data received:', pushData);
+            title = pushData.title || title;
+            options.body = pushData.body || options.body;
+            options.icon = pushData.icon || options.icon;
+            options.badge = pushData.badge || options.badge;
+            if (pushData.data && pushData.data.url) {
+                options.data.url = pushData.data.url;
+            }
+            if (pushData.tag) {
+                options.tag = pushData.tag;
+            }
+        } catch (e) {
+            console.error('[Service Worker] Error parsing push data JSON:', e);
+            // Fallback to default options if JSON parsing fails
+        }
+    } else {
+        console.log('[Service Worker] Push event received with no data. Using default notification.');
+    }
+
+    // Ensure the service worker stays alive until the notification is shown
+    event.waitUntil(
+        self.registration.showNotification(title, options)
+    );
+});
+
+/**
+ * Handles notification click events.
+ * This is triggered when a user clicks on any notification shown by this service worker.
+ */
+self.addEventListener('notificationclick', event => {
+    console.log('[Service Worker] Notification click received.', event.notification);
+    event.notification.close(); // Close the notification
+
+    // Get the URL to open from the notification's data (if provided)
+    const urlToOpen = event.notification.data && event.notification.data.url ?
+                      event.notification.data.url : '/'; // Default to opening the app's root
+
+    // Focus an existing window or open a new one
+    event.waitUntil(
+        clients.matchAll({
+            type: 'window',
+            includeUncontrolled: true // Important to find clients not yet controlled by this SW version
+        }).then(windowClients => {
+            // Check if there is already a window/tab open with the target URL
+            for (let i = 0; i < windowClients.length; i++) {
+                const client = windowClients[i];
+                // If a window is already open, focus it
+                if (client.url === urlToOpen && 'focus' in client) {
+                    console.log('[Service Worker] Focusing existing client window.');
+                    return client.focus();
+                }
+            }
+            // If no window is open, open a new one
+            if (clients.openWindow) {
+                console.log('[Service Worker] Opening new window to:', urlToOpen);
+                return clients.openWindow(urlToOpen);
+            }
+        })
     );
 });
