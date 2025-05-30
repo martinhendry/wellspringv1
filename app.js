@@ -6,6 +6,7 @@
  * between the state, UI modules, and other logic components.
  * *** MODIFIED: Added Service Worker registration. ***
  * *** MODIFIED: Added Edit/Delete functionality for timeline notes. ***
+ * *** MODIFIED: Improved feedback for adding notes by scrolling timeline to top. ***
  */
 
 // --- Core Modules ---
@@ -16,9 +17,7 @@ import {
     saveHabitPlan, deleteHabitPlan, setOnboardingComplete, setUserMode,
     setSimpleModePillarCount, setSimpleModePillars, setShowPlanner,
     setLevel100ToastShown,
-    // --- START IMPORT: New state functions for note editing/deleting ---
     updateNoteInTimeline, deleteNoteFromTimeline
-    // --- END IMPORT ---
 } from './state.js';
 import { checkAchievements } from './achievementlogic.js';
 import { exportData, setupImportListener } from './datamanagement.js';
@@ -212,24 +211,47 @@ function handleUnlockDay() {
     }
 }
 
+/**
+ * Handles adding a custom note to the timeline.
+ * *** MODIFIED: Scrolls timeline to top for better feedback. ***
+ */
 function handleAddNote() {
     handleInteractionForAudio();
     const textarea = document.getElementById("new-note-textarea");
-    if (!textarea) return;
+    if (!textarea) {
+        console.error("[App] Textarea for new note not found.");
+        return;
+    }
     const noteText = textarea.value.trim();
     if (!noteText) {
         showToast("Please enter some text for your note.", "info");
-        playSound('error'); return;
+        playSound('error');
+        return;
     }
-    addTimelineEntry({ type: 'note', text: noteText, date: new Date().toISOString() });
-    showToast("Note added to timeline.", "success");
-    textarea.value = "";
-    setupAutoResizeTextarea();
-    renderTimeline();
-    playSound('save', 'D5', '16n');
+
+    addTimelineEntry({ type: 'note', text: noteText, date: new Date().toISOString() }); // This saves state
+
+    showToast("Note added to timeline.", "success"); // User gets this feedback
+    textarea.value = ""; // Clear input
+    setupAutoResizeTextarea(); // Reset textarea height
+
+    renderTimeline(); // Re-render the timeline UI
+
+    // --- START MODIFICATION: Scroll timeline to top ---
+    const timelineEntriesContainer = document.getElementById('timeline-entries');
+    if (timelineEntriesContainer) {
+        timelineEntriesContainer.scrollTop = 0; // Scroll to the top to show the new note
+        console.log("[App] Scrolled timeline to top after adding note.");
+    }
+    // --- END MODIFICATION ---
+
+    playSound('save', 'D5', '16n'); // Sound feedback
+
+    // Check achievements and refresh daily log for potential XP updates
     checkAchievements(getStateReference());
     refreshDailyLogUI();
 }
+
 
 function handlePrestigeClick() {
     handleInteractionForAudio();
@@ -382,67 +404,47 @@ function updatePlannerVisibility(show) {
     }
 }
 
-// --- START NEW HANDLER FUNCTIONS for Note Edit/Delete ---
-/**
- * Handles the click event for editing a timeline note.
- * @param {string} noteId - The ID of the note to edit.
- */
 function handleEditNoteClick(noteId) {
     handleInteractionForAudio();
     const timeline = getState().timeline;
     const noteEntry = timeline.find(entry => entry.type === 'note' && entry.noteId === noteId);
-
     if (!noteEntry) {
         showToast("Could not find the note to edit.", "error");
-        playSound('error');
-        return;
+        playSound('error'); return;
     }
-
     const currentText = noteEntry.text;
     const newText = prompt("Edit your note:", currentText);
-
-    if (newText !== null && newText.trim() !== currentText.trim()) { // Check if newText is not null (user didn't cancel) and text actually changed
+    if (newText !== null && newText.trim() !== currentText.trim()) {
         if (updateNoteInTimeline(noteId, newText.trim())) {
             showToast("Note updated successfully!", "success");
             playSound('save', 'E5', '16n');
-            renderTimeline(); // Refresh the timeline to show the updated note
+            renderTimeline();
         } else {
-            // This case might occur if the note was deleted between finding and updating, though unlikely here.
             showToast("Failed to update note. It might have been deleted.", "error");
-            playSound('error');
-            renderTimeline(); // Refresh timeline just in case
+            playSound('error'); renderTimeline();
         }
     } else if (newText !== null && newText.trim() === currentText.trim()) {
-        // No change was made
         showToast("No changes made to the note.", "info");
     } else {
-        // User cancelled the prompt
         showToast("Note edit cancelled.", "info");
     }
 }
 
-/**
- * Handles the click event for deleting a timeline note.
- * @param {string} noteId - The ID of the note to delete.
- */
 function handleDeleteNoteClick(noteId) {
     handleInteractionForAudio();
     if (confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
         if (deleteNoteFromTimeline(noteId)) {
             showToast("Note deleted successfully.", "success");
             playSound('delete', 'C3', '8n');
-            renderTimeline(); // Refresh the timeline to remove the note
+            renderTimeline();
         } else {
             showToast("Failed to delete note. It might have already been deleted.", "error");
-            playSound('error');
-            renderTimeline(); // Refresh timeline just in case
+            playSound('error'); renderTimeline();
         }
     } else {
         showToast("Note deletion cancelled.", "info");
     }
 }
-// --- END NEW HANDLER FUNCTIONS ---
-
 
 function handleTouchStart(event) {
     const targetElement = event.target;
@@ -646,26 +648,13 @@ function setupEventListeners() {
         mainContentArea.addEventListener('touchend', handleTouchEnd);
     }
 
-    // --- START NEW EVENT LISTENER FOR NOTE ACTIONS ---
     document.getElementById('timeline-entries')?.addEventListener('click', (e) => {
         const target = e.target;
         const editButton = target.closest('.edit-note-btn');
         const deleteButton = target.closest('.delete-note-btn');
-
-        if (editButton) {
-            const noteId = editButton.dataset.noteId;
-            if (noteId) {
-                handleEditNoteClick(noteId);
-            }
-        } else if (deleteButton) {
-            const noteId = deleteButton.dataset.noteId;
-            if (noteId) {
-                handleDeleteNoteClick(noteId);
-            }
-        }
+        if (editButton) { const noteId = editButton.dataset.noteId; if (noteId) handleEditNoteClick(noteId); }
+        else if (deleteButton) { const noteId = deleteButton.dataset.noteId; if (noteId) handleDeleteNoteClick(noteId); }
     });
-    // --- END NEW EVENT LISTENER FOR NOTE ACTIONS ---
-
     console.log("[App] All event listeners set up.");
 }
 
