@@ -5,41 +5,29 @@
 ==============================*/
 :root {
   /* Color Palette (Light Theme - Default) */
-  --primary: #2c3e50;       /* Dark Blue-Gray (Headings, Borders) */
-  --primary-light: #34495e; /* Slightly Lighter Blue-Gray */
-  --secondary: #27ae60;     /* Green (Success, Positive Actions) */
-  --accent: #e74c3c;       /* Red (Alerts, Delete) */
-  --background: #f5f6fa;   /* Light Gray (Page Background) */
-  --card-bg: white;        /* Card/Modal Background */
-  --text: /* style.css - WellSpring Application Styles (Refactored v1) */
-
-/*==============================
-  Root Variables & Themes
-==============================*/
-:root {
-  /* Color Palette (Light Theme - Default) */
   --primary: #2c3e50;       /* Dark Blue-Gray (Headings, Borders, Key Actions) */
   --primary-light: #34495e; /* Slightly Lighter Blue-Gray (Hover states) */
   --secondary: #27ae60;     /* Green (Success, Positive Actions, Progress) */
-  --accent: #e74c3c;       /* Red (Alerts, Delete, Negative Feedback) */
-  --background: #f5f6fa;   /* Very Light Gray (Page Background) */
-  --card-bg: white;        /* Card/Modal Background */
-  --text: #2d3436;         /* Dark Gray (Main Text) */
-  --text-muted: #718093;   /* Medium Gray (Subtle Text, Labels, Placeholders) */
-  --border-color: #dfe6e9; /* Light Gray (Borders, Dividers) */
-  --button-bg: #6ab4de;     /* Light Blue (Default Buttons - Consider aligning with primary/secondary) */
+  --accent: #e74c3c;        /* Red (Alerts, Delete, Negative Feedback) */
+  --background: #f5f6fa;    /* Very Light Gray (Page Background) */
+  --card-bg: white;         /* Card/Modal Background */
+  --text: #2d3436;          /* Dark Gray (Main Text) */
+  --text-muted: #718093;    /* Medium Gray (Subtle Text, Labels, Placeholders) */
+  --border-color: #dfe6e9;  /* Light Gray (Borders, Dividers) */
+  --button-bg: #6ab4de;      /* Light Blue (Default Buttons - Consider aligning with primary/secondary) */
   --button-text: var(--text); /* Text on default buttons */
   --button-hover-bg: var(--primary); /* Hover for default buttons */
   --button-hover-text: white; /* Text on hover for default buttons */
-  --saved-color: #f1c40f;   /* Yellow (Saved Day Indicator, Achievement Highlights) */
-  --grid-color: #c8d6e5;    /* Polygon Chart Grid Lines */
+  --saved-color: #f1c40f;    /* Yellow (Saved Day Indicator, Achievement Highlights) */
+  --grid-color: #c8d6e5;     /* Polygon Chart Grid Lines */
   --mood-bg: rgba(255, 255, 255, 0.9); /* Mood Selector Background */
-  --guide-bg: #f8f9fa;      /* Help/Guide Section Background */
+  --guide-bg: #f8f9fa;       /* Help/Guide Section Background */
   --achievement-bg: #fffbe6; /* Light Yellow (Achievement Cards) */
   --achievement-border: #ffeba7; /* Border for achievement cards */
+  --achievement-icon-locked-color: #868e96; /* Distinct grey for locked icons */
   --collapsible-bg: color-mix(in srgb, var(--card-bg) 95%, var(--background)); /* Slightly off-white */
-  --tooltip-bg: #2c3e50;    /* Dark Tooltip Background */
-  --tooltip-text: white;    /* Light Tooltip Text */
+  --tooltip-bg: #2c3e50;     /* Dark Tooltip Background */
+  --tooltip-text: white;     /* Light Tooltip Text */
   --focus-ring-color: #3498db; /* Blue Focus Outline */
   --modal-overlay-bg: rgba(0, 0, 0, 0.6); /* Modal Background Dim */
   --toast-success-bg: var(--secondary);
@@ -57,11 +45,11 @@
 
   /* Font Sizes (Responsive) - Using clamp for fluid typography */
   --font-size-base: clamp(1rem, 1.5vw + 0.5rem, 1.1rem); /* Approx 16px-17.6px */
-  --font-size-h1: clamp(1.8rem, 5vw, 2.4rem); /* Approx 28.8px-38.4px */
-  --font-size-h2: clamp(1.4rem, 4vw, 1.8rem); /* Approx 22.4px-28.8px */
-  --font-size-h3: clamp(1.15rem, 3.5vw, 1.4rem); /* Approx 18.4px-22.4px */
-  --font-size-small: clamp(0.85rem, 1vw + 0.5rem, 0.95rem); /* Approx 13.6px-15.2px */
-  --font-size-xsmall: clamp(0.75rem, 0.8vw + 0.4rem, 0.85rem); /* Approx 12px-13.6px */
+  --font-size-h1: clamp(1.6rem, 5vw, 2.2rem); /* Approx 28.8px-38.4px, adjusted from previous */
+  --font-size-h2: clamp(1.3rem, 4vw, 1.6rem); /* Approx 22.4px-28.8px, adjusted */
+  --font-size-h3: clamp(1.1rem, 3.5vw, 1.3rem); /* Approx 18.4px-22.4px, adjusted */
+  --font-size-small: clamp(0.8rem, 1vw + 0.5rem, 0.9rem); /* Approx 13.6px-15.2px, adjusted */
+  --font-size-xsmall: clamp(0.7rem, 0.8vw + 0.4rem, 0.8rem); /* Approx 12px-13.6px, adjusted */
 
   /* Spacing (Consistent rhythm) */
   --space-xs: clamp(4px, 1vw, 6px);
@@ -96,28 +84,29 @@
   --primary: #3498db;       /* Bright Blue */
   --primary-light: #5dade2;
   --secondary: #2ecc71;     /* Bright Green */
-  --accent: #e74c3c;       /* Red (Stays the same) */
-  --background: #2c3e50;   /* Dark Blue-Gray */
-  --card-bg: #34495e;      /* Darker Blue-Gray */
-  --text: #ecf0f1;         /* Light Gray */
-  --text-muted: #95a5a6;   /* Lighter Muted Gray */
-  --border-color: #46627f; /* Muted Blue */
-  --button-bg: #5dade2;     /* Slightly Brighter Blue */
-  --button-text: #2c3e50;   /* Dark text on light blue button */
+  --accent: #e74c3c;        /* Red (Stays the same) */
+  --background: #2c3e50;    /* Dark Blue-Gray */
+  --card-bg: #34495e;       /* Darker Blue-Gray */
+  --text: #ecf0f1;          /* Light Gray */
+  --text-muted: #95a5a6;    /* Lighter Muted Gray */
+  --border-color: #46627f;  /* Muted Blue */
+  --button-bg: #5dade2;      /* Slightly Brighter Blue */
+  --button-text: var(--text); /* Use dark theme text for default buttons */
   --button-hover-bg: var(--primary);
   --button-hover-text: white;
-  --saved-color: #f39c12;   /* Orange */
-  --grid-color: #576574;    /* Darker Grid Lines */
+  --saved-color: #f39c12;    /* Orange */
+  --grid-color: #576574;     /* Darker Grid Lines */
   --mood-bg: rgba(0, 0, 0, 0.2);
   --guide-bg: #2c3e50;
   --achievement-bg: #4a4a2a; /* Dark Yellow/Brown */
   --achievement-border: #7a7a4a;
+  --achievement-icon-locked-color: #718093; /* Adjusted for dark theme if needed, or keep same as light */
   --collapsible-bg: color-mix(in srgb, var(--card-bg) 95%, var(--background));
-  --tooltip-bg: #ecf0f1;    /* Light Tooltip Background */
-  --tooltip-text: #2c3e50;  /* Dark Tooltip Text */
+  --tooltip-bg: #ecf0f1;     /* Light Tooltip Background */
+  --tooltip-text: #2c3e50;   /* Dark Tooltip Text */
   --focus-ring-color: #5dade2;
   --modal-overlay-bg: rgba(0, 0, 0, 0.7);
-  /* Toast colors remain the same */
+  /* Toast colors remain the same as they are self-contained */
 }
 
 /*==============================
@@ -2036,36 +2025,44 @@ h3 { font-size: var(--font-size-h3); }
 #achievements h2 { color: var(--primary); }
 .achievements-intro { text-align: center; font-size: var(--font-size-small); color: var(--text-muted); margin-bottom: 0.5rem; }
 .achievements-counter { text-align: center; font-size: var(--font-size-base); color: var(--text-muted); margin-top: 0; margin-bottom: 1rem; font-weight: 500; }
-[data-theme="dark"] .achievements-counter { color: var(--text-muted); }
-#achievement-board-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+/* [data-theme="dark"] .achievements-counter { color: var(--text-muted); } */ /* Already covered by general var(--text-muted) in dark theme */
+
+#achievement-board-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
 @media (min-width: 480px) { #achievement-board-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 640px) { #achievement-board-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (min-width: 1024px) { #achievement-board-grid { grid-template-columns: repeat(5, 1fr); } }
 
 .achievement-card {
-    background-color: var(--card-bg);
+    background-color: var(--card-bg); /* Uses --card-bg from :root or [data-theme="dark"] */
     border-radius: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    box-shadow: var(--shadow-md); /* Using defined shadow variable */
     padding: 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    aspect-ratio: 1 / 1; /* Maintain square aspect ratio */
+    aspect-ratio: 1 / 1;
     position: relative;
     overflow: hidden;
     transition: transform var(--transition-duration-fast) ease-in-out, box-shadow var(--transition-duration-fast) ease-in-out;
     border: 1px solid var(--border-color);
     cursor: pointer;
 }
+
 .achievement-card:hover {
-    transform: translateY(-4px) scale(1.03); /* Slightly lift and scale */
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: var(--shadow-lg); /* Using defined shadow variable */
 }
+
 .achievement-card.locked {
-    opacity: 0.6;
+    opacity: 0.65;
     filter: grayscale(80%);
 }
+
 .achievement-card .icon-container {
     position: absolute;
     inset: 0;
@@ -2077,18 +2074,30 @@ h3 { font-size: var(--font-size-h3); }
     padding: 0.5rem;
     transition: opacity 0.3s ease-in-out;
 }
-.achievement-card .icon-container i { /* Icon styling */
-    font-size: clamp(2rem, 8vw, 2.5rem); /* Responsive icon size */
+
+/* Base styles for ALL icons (locked or unlocked) */
+.achievement-card .icon-container i {
+    font-size: clamp(2rem, 8vw, 2.5rem);
     margin-bottom: 0.5rem;
     line-height: 1;
+    /* Color is set by .icon-unlocked or .icon-locked */
 }
-.achievement-card .icon-container .icon-unlocked { color: var(--secondary); }
-.achievement-card .icon-container .icon-locked { color: var(--text-muted); }
+
+/* Styles for UNLOCKED icons */
+.achievement-card .icon-container i.icon-unlocked {
+    color: var(--secondary); /* Green for light, Bright Green for dark */
+}
+
+/* Styles for LOCKED icons */
+.achievement-card .icon-container i.icon-locked {
+    color: var(--achievement-icon-locked-color); /* #868e96 for light, #718093 for dark (if overridden) */
+}
+
 .achievement-card .icon-container .achievement-title {
     font-size: var(--font-size-xsmall);
     font-weight: 600;
-    color: var(--text);
-    line-height: 1.3; /* Allow wrapping */
+    color: var(--text); /* Uses --text from :root or [data-theme="dark"] */
+    line-height: 1.3;
 }
 
 /*==============================
