@@ -7,6 +7,7 @@
  * *** MODIFIED: Added Service Worker registration. ***
  * *** MODIFIED: Added Edit/Delete functionality for timeline notes. ***
  * *** MODIFIED: Improved feedback for adding notes by scrolling timeline to top. ***
+ * *** MODIFIED: Added basic GA4 event tracking. ***
  */
 
 // --- Core Modules ---
@@ -52,12 +53,27 @@ let touchStartY = 0;
 let touchEndX = 0;
 let touchEndY = 0;
 
+// --- GA4 Event Tracking Helper ---
+/**
+ * Sends an event to Google Analytics 4.
+ * @param {string} eventName - The name of the event (e.g., 'button_click').
+ * @param {object} [eventParams={}] - Optional parameters for the event.
+ */
+function trackGAEvent(eventName, eventParams = {}) {
+    if (typeof gtag === 'function') {
+        gtag('event', eventName, eventParams);
+        console.log(`[GA4] Event tracked: ${eventName}`, eventParams);
+    } else {
+        console.warn(`[GA4] gtag function not found. Event not tracked: ${eventName}`);
+    }
+}
+
 // --- Initialization ---
 function init() {
     console.log("[App] Initializing WellSpring v2...");
     document.body.classList.add('js-loaded');
     loadState();
-    initTheme();
+    initTheme(); // GA4 config is in index.html, so pageview fires on load
     initializeAudio();
     registerServiceWorker();
     updateAudioToggleButton();
@@ -69,13 +85,18 @@ function init() {
     updatePlannerVisibility(initialStateData.showPlanner);
     resetDateDisplay();
     refreshDailyLogUI();
-    showTab('daily');
+    showTab('daily'); // Initial tab view, track this
+    trackGAEvent('view_tab', { tab_id: 'daily' });
+
+
     setupEventListeners();
     if (!initialStateData.isOnboardingComplete) {
         showOnboardingModal();
         goToOnboardingStep(1);
+        trackGAEvent('onboarding_started');
     } else if (!initialStateData.userName) {
         showNamePromptModal();
+        trackGAEvent('name_prompt_shown');
     } else {
         refreshDailyLogUI();
     }
@@ -133,6 +154,7 @@ function handleDateChangeInput(newDateString) {
     refreshDailyLogUI();
     updateNoteHeaderPrompt();
     playSound('navigate', 'D5', '16n');
+    trackGAEvent('date_changed', { method: 'picker' });
 }
 
 function handleDateArrowChange(offset) {
@@ -150,11 +172,13 @@ function handleDateArrowChange(offset) {
     refreshDailyLogUI();
     updateNoteHeaderPrompt();
     playSound('navigate', offset > 0 ? 'E5' : 'C5', '16n');
+    trackGAEvent('date_changed', { method: 'arrows', direction: offset > 0 ? 'next' : 'previous' });
 }
 
 function handleShowDatePicker() {
     handleInteractionForAudio();
     showDatePicker();
+    trackGAEvent('show_date_picker');
 }
 
 function handleSaveDay() {
@@ -170,9 +194,13 @@ function handleSaveDay() {
     }
     const saved = saveDay(currentDate);
     if (saved) {
+        trackGAEvent('day_saved', {
+            pillar_count: activePillars.length,
+            mood_logged: !!mood
+        });
         const updatedState = getState();
         const currentPrestige = updatedState.prestige;
-        checkAchievements(getStateReference());
+        checkAchievements(getStateReference()); // This might trigger unlockAchievement which has its own GA event
         refreshDailyLogUI();
         showToast("Day saved successfully!", "success");
         playSound('save', 'E5', '8n');
@@ -182,6 +210,7 @@ function handleSaveDay() {
                 showToast("🎉 Level 100! Ready for the next Cycle? Find the button on the Journey tab!", "info", 8000);
                 setLevel100ToastShown(currentPrestige);
                 playSound('achievement');
+                trackGAEvent('level_100_reached', { cycle: currentPrestige });
             }
         } catch(e) { console.error("[App] Error checking for Level 100 toast:", e); }
         const isSunday = new Date(currentDate + 'T00:00:00Z').getUTCDay() === 0;
@@ -191,9 +220,9 @@ function handleSaveDay() {
         const hasWeeklyNote = updatedState.timeline.some(e => e?.type === 'note' && e.text?.toLowerCase().includes('#weeklyreflection') && getWeekNumber(e.date?.split('T')[0]) === weekId);
         const hasAnyNoteToday = updatedState.timeline.some(e => e?.type === 'note' && e.date?.startsWith(currentDate));
         if (isSunday && noteTextArea && journeyTabButton && !hasWeeklyNote) {
-            setTimeout(() => { if (confirm("It's Sunday! Would you like to add a weekly reflection note now?")) { showTab('journey'); updateNoteHeaderPrompt(); noteTextArea.value = "#WeeklyReflection "; noteTextArea.focus({ preventScroll: true }); requestAnimationFrame(() => { noteTextArea.style.height = 'auto'; noteTextArea.style.height = `${noteTextArea.scrollHeight}px`; }); } }, 600);
+            setTimeout(() => { if (confirm("It's Sunday! Would you like to add a weekly reflection note now?")) { showTab('journey'); trackGAEvent('view_tab', { tab_id: 'journey', source: 'sunday_prompt' }); updateNoteHeaderPrompt(); noteTextArea.value = "#WeeklyReflection "; noteTextArea.focus({ preventScroll: true }); requestAnimationFrame(() => { noteTextArea.style.height = 'auto'; noteTextArea.style.height = `${noteTextArea.scrollHeight}px`; }); } }, 600);
         } else if (!isSunday && noteTextArea && journeyTabButton && !hasAnyNoteToday) {
-             setTimeout(() => { if (confirm("Day saved! Add a quick gratitude or reflection note to your Journey?")) { showTab('journey'); updateNoteHeaderPrompt(); noteTextArea.value = ""; noteTextArea.focus({ preventScroll: true }); requestAnimationFrame(() => { noteTextArea.style.height = 'auto'; noteTextArea.style.height = `${noteTextArea.scrollHeight}px`; }); } }, 600);
+             setTimeout(() => { if (confirm("Day saved! Add a quick gratitude or reflection note to your Journey?")) { showTab('journey'); trackGAEvent('view_tab', { tab_id: 'journey', source: 'save_day_prompt' }); updateNoteHeaderPrompt(); noteTextArea.value = ""; noteTextArea.focus({ preventScroll: true }); requestAnimationFrame(() => { noteTextArea.style.height = 'auto'; noteTextArea.style.height = `${noteTextArea.scrollHeight}px`; }); } }, 600);
         }
     } else { showToast("This day is already saved.", "info"); }
 }
@@ -204,6 +233,7 @@ function handleUnlockDay() {
     if (!state || !state.currentDate) return;
     if (confirm("Are you sure you want to unlock this day? This allows editing but removes the 'saved' status and may affect your streak.")) {
         if (unlockDayEntry(state.currentDate)) {
+            trackGAEvent('day_unlocked');
             refreshDailyLogUI();
             showToast("Day unlocked for editing.", "info");
             playSound('unlock', 'C4', '8n');
@@ -211,47 +241,27 @@ function handleUnlockDay() {
     }
 }
 
-/**
- * Handles adding a custom note to the timeline.
- * *** MODIFIED: Scrolls timeline to top for better feedback. ***
- */
 function handleAddNote() {
     handleInteractionForAudio();
     const textarea = document.getElementById("new-note-textarea");
-    if (!textarea) {
-        console.error("[App] Textarea for new note not found.");
-        return;
-    }
+    if (!textarea) return;
     const noteText = textarea.value.trim();
     if (!noteText) {
         showToast("Please enter some text for your note.", "info");
-        playSound('error');
-        return;
+        playSound('error'); return;
     }
-
-    addTimelineEntry({ type: 'note', text: noteText, date: new Date().toISOString() }); // This saves state
-
-    showToast("Note added to timeline.", "success"); // User gets this feedback
-    textarea.value = ""; // Clear input
-    setupAutoResizeTextarea(); // Reset textarea height
-
-    renderTimeline(); // Re-render the timeline UI
-
-    // --- START MODIFICATION: Scroll timeline to top ---
+    addTimelineEntry({ type: 'note', text: noteText, date: new Date().toISOString() });
+    trackGAEvent('note_added'); // Event for adding a note
+    showToast("Note added to timeline.", "success");
+    textarea.value = "";
+    setupAutoResizeTextarea();
+    renderTimeline();
     const timelineEntriesContainer = document.getElementById('timeline-entries');
-    if (timelineEntriesContainer) {
-        timelineEntriesContainer.scrollTop = 0; // Scroll to the top to show the new note
-        console.log("[App] Scrolled timeline to top after adding note.");
-    }
-    // --- END MODIFICATION ---
-
-    playSound('save', 'D5', '16n'); // Sound feedback
-
-    // Check achievements and refresh daily log for potential XP updates
+    if (timelineEntriesContainer) timelineEntriesContainer.scrollTop = 0;
+    playSound('save', 'D5', '16n');
     checkAchievements(getStateReference());
     refreshDailyLogUI();
 }
-
 
 function handlePrestigeClick() {
     handleInteractionForAudio();
@@ -264,6 +274,7 @@ function handlePrestigeClick() {
     }
     if (confirm(`Are you sure you want to begin Cycle ${levelData.prestige + 1}? Your Level and XP will reset, but your progress and achievements remain.`)) {
         if (prestigeLevel()) {
+            trackGAEvent('prestige_completed', { new_cycle: getState().prestige });
             refreshDailyLogUI();
             renderTimeline();
             showToast(`Congratulations! You've entered Cycle ${getState().prestige}!`, "success", 5000);
@@ -298,6 +309,7 @@ function handleSaveHabitPlan(event) {
     else if (planData.type === 'stacking' && !planData.anchorHabit) { isValid = false; errorMessage = "Please provide the 'After/Before' anchor habit."; }
     if (!isValid) { showToast(errorMessage, "error"); playSound('error'); return; }
     if (saveHabitPlan(planData)) {
+        trackGAEvent(planId ? 'habit_plan_updated' : 'habit_plan_saved', { plan_type: planData.type });
         showToast(`Habit plan ${planId ? 'updated' : 'saved'}!`, "success");
         playSound('save', 'D5', '8n');
         resetHabitPlanForm();
@@ -311,6 +323,7 @@ function handleDeleteHabitPlan(planId) {
     const planName = getState().habitPlans?.[planId]?.activityDescription || 'this plan';
     if (confirm(`Delete plan: "${escapeHtml(planName)}"?`)) {
         if (deleteHabitPlan(planId)) {
+            trackGAEvent('habit_plan_deleted');
             showToast("Habit plan deleted.", "success");
             playSound('delete', 'C3', '8n');
             resetHabitPlanForm();
@@ -327,14 +340,19 @@ function handleSaveName(fromOnboarding = false) {
     const name = nameInput.value.trim();
     if (name) {
         setUserName(name);
-        if (!fromOnboarding) { closeNamePromptModal(); showToast(`Welcome, ${escapeHtml(name)}!`, "success"); refreshDailyLogUI(); }
+        if (!fromOnboarding) {
+            trackGAEvent('user_name_set', { source: 'name_prompt_modal'});
+            closeNamePromptModal(); showToast(`Welcome, ${escapeHtml(name)}!`, "success"); refreshDailyLogUI();
+        } else {
+            trackGAEvent('user_name_set', { source: 'onboarding'});
+        }
         playSound('save', 'G5', '8n'); return true;
     } else { showToast("Please enter your name.", "info"); playSound('error'); nameInput.focus(); return false; }
 }
 
 function handleCompleteOnboarding() {
     handleInteractionForAudio();
-    if (!handleSaveName(true)) return;
+    if (!handleSaveName(true)) return; // GA event for name set is in handleSaveName
     const selectedMode = document.querySelector('input[name="onboardingMode"]:checked')?.value || 'full';
     let selectedPillarIds = [], validationPassed = true, simpleModeCount = null;
     if (selectedMode === 'simple') {
@@ -351,6 +369,7 @@ function handleCompleteOnboarding() {
         setUserMode(selectedMode);
         if (selectedMode === 'simple') { setSimpleModePillarCount(simpleModeCount); setSimpleModePillars(selectedPillarIds); }
         setOnboardingComplete(true);
+        trackGAEvent('onboarding_completed', { mode_selected: selectedMode, simple_pillar_count: simpleModeCount });
         hideOnboardingModal();
         updateUIVisibilityForMode(selectedMode);
         updatePlannerVisibility(getState().showPlanner);
@@ -383,6 +402,11 @@ function handleSaveSettings(event) {
         setShowPlanner(showPlannerSetting);
         if (selectedMode === 'simple') { setSimpleModePillarCount(simpleModeCount); setSimpleModePillars(selectedPillarIds); }
         else { setSimpleModePillarCount(null); setSimpleModePillars([]); }
+        trackGAEvent('settings_saved', {
+            mode_changed_to: selectedMode,
+            show_planner: showPlannerSetting,
+            name_updated: !!(newName && newName !== getState().userName) // Track if name was actually changed
+        });
         updateUIVisibilityForMode(selectedMode);
         updatePlannerVisibility(showPlannerSetting);
         refreshDailyLogUI();
@@ -408,21 +432,16 @@ function handleEditNoteClick(noteId) {
     handleInteractionForAudio();
     const timeline = getState().timeline;
     const noteEntry = timeline.find(entry => entry.type === 'note' && entry.noteId === noteId);
-    if (!noteEntry) {
-        showToast("Could not find the note to edit.", "error");
-        playSound('error'); return;
-    }
+    if (!noteEntry) { showToast("Could not find the note to edit.", "error"); playSound('error'); return; }
     const currentText = noteEntry.text;
     const newText = prompt("Edit your note:", currentText);
     if (newText !== null && newText.trim() !== currentText.trim()) {
         if (updateNoteInTimeline(noteId, newText.trim())) {
+            trackGAEvent('note_edited');
             showToast("Note updated successfully!", "success");
             playSound('save', 'E5', '16n');
             renderTimeline();
-        } else {
-            showToast("Failed to update note. It might have been deleted.", "error");
-            playSound('error'); renderTimeline();
-        }
+        } else { showToast("Failed to update note. It might have been deleted.", "error"); playSound('error'); renderTimeline(); }
     } else if (newText !== null && newText.trim() === currentText.trim()) {
         showToast("No changes made to the note.", "info");
     } else {
@@ -434,13 +453,11 @@ function handleDeleteNoteClick(noteId) {
     handleInteractionForAudio();
     if (confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
         if (deleteNoteFromTimeline(noteId)) {
+            trackGAEvent('note_deleted');
             showToast("Note deleted successfully.", "success");
             playSound('delete', 'C3', '8n');
             renderTimeline();
-        } else {
-            showToast("Failed to delete note. It might have already been deleted.", "error");
-            playSound('error'); renderTimeline();
-        }
+        } else { showToast("Failed to delete note. It might have already been deleted.", "error"); playSound('error'); renderTimeline(); }
     } else {
         showToast("Note deletion cancelled.", "info");
     }
@@ -476,10 +493,10 @@ function handleTouchEnd(event) {
             const nextTabButton = tabButtons[nextTabIndex];
             const nextTabId = nextTabButton?.dataset.tab;
             if (nextTabId) {
-                 if (nextTabId === 'calendar') { handleShowCalendarTab(); }
-                 else if (nextTabId === 'journey') { renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); showTab(nextTabId); }
-                 else if (nextTabId === 'achievements') { renderAchievementBoard(); showTab(nextTabId); }
-                 else { showTab(nextTabId); }
+                 if (nextTabId === 'calendar') { handleShowCalendarTab(); } // showTab inside handles GA
+                 else if (nextTabId === 'journey') { renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
+                 else if (nextTabId === 'achievements') { renderAchievementBoard(); showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
+                 else { showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });}
                  playSound('navigate', deltaX < 0 ? 'E5' : 'C5', '16n');
             }
         }
@@ -492,6 +509,7 @@ function setupEventListeners() {
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
         handleInteractionForAudio();
         toggleTheme((newTheme) => {
+            trackGAEvent('theme_changed', { new_theme: newTheme });
             const analyticsContainer = document.getElementById('analytics-container');
             if (analyticsContainer && analyticsContainer.style.display === 'block') switchAnalyticsView(currentAnalyticsView);
             const achievementsTab = document.getElementById('achievements');
@@ -499,17 +517,29 @@ function setupEventListeners() {
         });
         playSound('click', 'E5', '16n');
     });
-    document.getElementById('audio-toggle')?.addEventListener('click', () => { handleInteractionForAudio(); toggleSoundEnabled(); updateAudioToggleButton(); playSound('click', getStateReference().isSoundEnabled ? 'C5' : 'C4', '8n'); });
-    document.getElementById('settings-btn')?.addEventListener('click', () => { handleInteractionForAudio(); showSettingsModal(); playSound('click', 'B4', '16n'); });
+    document.getElementById('audio-toggle')?.addEventListener('click', () => {
+        handleInteractionForAudio();
+        toggleSoundEnabled();
+        updateAudioToggleButton();
+        const soundEnabled = getStateReference().isSoundEnabled;
+        trackGAEvent('sound_toggled', { enabled: soundEnabled });
+        playSound('click', soundEnabled ? 'C5' : 'C4', '8n');
+    });
+    document.getElementById('settings-btn')?.addEventListener('click', () => {
+        handleInteractionForAudio();
+        showSettingsModal();
+        trackGAEvent('settings_opened');
+        playSound('click', 'B4', '16n');
+    });
     document.querySelector('.nav-tabs')?.addEventListener('click', (e) => {
         if (e.target.matches('.tab-button')) {
             handleInteractionForAudio();
             const tabId = e.target.dataset.tab;
             if (tabId) {
-                if (tabId === 'calendar') handleShowCalendarTab();
-                else if (tabId === 'journey') { renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); showTab(tabId); }
-                else if (tabId === 'achievements') { renderAchievementBoard(); showTab(tabId); }
-                else showTab(tabId);
+                if (tabId === 'calendar') handleShowCalendarTab(); // showTab inside handles GA
+                else if (tabId === 'journey') { renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); showTab(tabId); trackGAEvent('view_tab', { tab_id: tabId, source: 'click' }); }
+                else if (tabId === 'achievements') { renderAchievementBoard(); showTab(tabId); trackGAEvent('view_tab', { tab_id: tabId, source: 'click' }); }
+                else { showTab(tabId); trackGAEvent('view_tab', { tab_id: tabId, source: 'click' }); }
             }
         }
     });
@@ -519,56 +549,85 @@ function setupEventListeners() {
     document.getElementById('hidden-date-input')?.addEventListener('change', (e) => handleDateChangeInput(e.target.value));
     document.getElementById('pillar-inputs')?.addEventListener('click', (e) => {
         const card = e.target.closest('.pillar-card');
-        if (card && !e.target.classList.contains('info-icon')) handlePillarClick(card);
+        if (card && !e.target.classList.contains('info-icon')) {
+            handlePillarClick(card); // GA for pillar toggle can be complex, maybe later
+        }
     });
     document.getElementById('pillar-inputs')?.addEventListener('keydown', (e) => {
         const card = e.target.closest('.pillar-card');
         if (card && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handlePillarClick(card); }
     });
-    document.querySelector('.mood-options')?.addEventListener('click', handleMoodClick);
+    document.querySelector('.mood-options')?.addEventListener('click', (e) => {
+        handleMoodClick(e);
+        const moodLevel = e.target.closest('.mood-option')?.dataset.level;
+        if (moodLevel) trackGAEvent('mood_changed', { level: parseInt(moodLevel) });
+    });
     document.getElementById('lock-button')?.addEventListener('click', handleSaveDay);
     document.getElementById('unlock-button')?.addEventListener('click', handleUnlockDay);
     document.getElementById('add-note-btn')?.addEventListener('click', handleAddNote);
-    document.getElementById('timeline-filter')?.addEventListener('change', (e) => { handleInteractionForAudio(); updateTimelineFilter(e.target.value); renderTimeline(); playSound('click', 'D5', '16n'); });
-    document.getElementById('timeline-sort')?.addEventListener('change', (e) => { handleInteractionForAudio(); updateTimelineSortOrder(e.target.value); renderTimeline(); playSound('click', 'E5', '16n'); });
+    document.getElementById('timeline-filter')?.addEventListener('change', (e) => {
+        handleInteractionForAudio(); updateTimelineFilter(e.target.value); renderTimeline();
+        trackGAEvent('timeline_filter_changed', { filter_type: e.target.value });
+        playSound('click', 'D5', '16n');
+    });
+    document.getElementById('timeline-sort')?.addEventListener('change', (e) => {
+        handleInteractionForAudio(); updateTimelineSortOrder(e.target.value); renderTimeline();
+        trackGAEvent('timeline_sort_changed', { sort_order: e.target.value });
+        playSound('click', 'E5', '16n');
+    });
     document.getElementById('prestige-button')?.addEventListener('click', handlePrestigeClick);
     document.getElementById('new-note-textarea')?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddNote(); } });
     document.getElementById('calendar-grid')?.addEventListener('click', (e) => {
         const dayCell = e.target.closest('.calendar-day:not(.disabled)');
-        if (dayCell?.dataset.date) { handleInteractionForAudio(); handleDateChangeInput(dayCell.dataset.date); showTab('daily'); playSound('click', 'E5', '16n'); }
+        if (dayCell?.dataset.date) { handleInteractionForAudio(); handleDateChangeInput(dayCell.dataset.date); showTab('daily'); trackGAEvent('view_tab', { tab_id: 'daily', source: 'calendar_click' }); playSound('click', 'E5', '16n'); }
     });
-    document.getElementById('prev-month-btn')?.addEventListener('click', () => handleMonthChange(-1));
-    document.getElementById('next-month-btn')?.addEventListener('click', () => handleMonthChange(1));
-    document.getElementById('view-analytics-btn')?.addEventListener('click', () => { handleInteractionForAudio(); toggleAnalyticsVisibility(); playSound('click', 'B4', '16n'); });
+    document.getElementById('prev-month-btn')?.addEventListener('click', () => {handleMonthChange(-1); trackGAEvent('calendar_month_changed', { direction: 'previous'}); });
+    document.getElementById('next-month-btn')?.addEventListener('click', () => {handleMonthChange(1); trackGAEvent('calendar_month_changed', { direction: 'next'}); });
+    document.getElementById('view-analytics-btn')?.addEventListener('click', () => {
+         handleInteractionForAudio(); toggleAnalyticsVisibility();
+         trackGAEvent('analytics_visibility_toggled', { visible: document.getElementById("analytics-container").style.display === "block" });
+         playSound('click', 'B4', '16n');
+    });
     document.getElementById('analytics-toggles')?.addEventListener('click', (e) => {
         if (e.target.matches('button')) {
             const view = e.target.dataset.view;
-            if (view && view !== currentAnalyticsView) { handleInteractionForAudio(); switchAnalyticsView(view); playSound('click', 'G4', '16n'); }
+            if (view && view !== currentAnalyticsView) {
+                handleInteractionForAudio(); switchAnalyticsView(view);
+                trackGAEvent('analytics_view_switched', { view_id: view });
+                playSound('click', 'G4', '16n');
+            }
         }
     });
     document.getElementById('achievement-board-grid')?.addEventListener('click', (e) => {
         const card = e.target.closest('.achievement-card');
-        if (card?.dataset.achievementId) { handleInteractionForAudio(); showAchievementModal(card.dataset.achievementId); }
+        if (card?.dataset.achievementId) {
+            handleInteractionForAudio(); showAchievementModal(card.dataset.achievementId);
+            trackGAEvent('achievement_modal_opened', { achievement_id: card.dataset.achievementId });
+        }
     });
     document.getElementById('achievement-board-grid')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
             const card = e.target.closest('.achievement-card');
-            if (card?.dataset.achievementId) { e.preventDefault(); handleInteractionForAudio(); showAchievementModal(card.dataset.achievementId); }
+            if (card?.dataset.achievementId) { e.preventDefault(); handleInteractionForAudio(); showAchievementModal(card.dataset.achievementId); trackGAEvent('achievement_modal_opened', { achievement_id: card.dataset.achievementId, source: 'keyboard' });}
         }
     });
-    document.getElementById('dismiss-welcome-btn')?.addEventListener('click', () => { handleInteractionForAudio(); closeWelcomeModal(); playSound('save', 'E5', '8n'); });
-    document.querySelector('#welcome-modal .modal-close-btn')?.addEventListener('click', () => { handleInteractionForAudio(); closeWelcomeModal(); playSound('click', 'D4', '16n'); });
-    document.getElementById('welcome-modal')?.addEventListener('click', (e) => { if (e.target.id === 'welcome-modal') { handleInteractionForAudio(); closeWelcomeModal(); playSound('click', 'D4', '16n'); } });
+    document.getElementById('dismiss-welcome-btn')?.addEventListener('click', () => { handleInteractionForAudio(); closeWelcomeModal(); trackGAEvent('welcome_modal_dismissed'); playSound('save', 'E5', '8n'); });
+    document.querySelector('#welcome-modal .modal-close-btn')?.addEventListener('click', () => { handleInteractionForAudio(); closeWelcomeModal(); trackGAEvent('welcome_modal_closed'); playSound('click', 'D4', '16n'); });
+    document.getElementById('welcome-modal')?.addEventListener('click', (e) => { if (e.target.id === 'welcome-modal') { handleInteractionForAudio(); closeWelcomeModal(); trackGAEvent('welcome_modal_closed'); playSound('click', 'D4', '16n'); } });
     document.getElementById('save-name-btn')?.addEventListener('click', () => handleSaveName(false));
-    document.querySelector('#name-prompt-modal .modal-close-btn')?.addEventListener('click', () => { handleInteractionForAudio(); closeNamePromptModal(); playSound('click', 'D4', '16n'); });
-    document.getElementById('name-prompt-modal')?.addEventListener('click', (e) => { if (e.target.id === 'name-prompt-modal') { handleInteractionForAudio(); closeNamePromptModal(); playSound('click', 'D4', '16n'); } });
+    document.querySelector('#name-prompt-modal .modal-close-btn')?.addEventListener('click', () => { handleInteractionForAudio(); closeNamePromptModal(); trackGAEvent('name_prompt_closed'); playSound('click', 'D4', '16n'); });
+    document.getElementById('name-prompt-modal')?.addEventListener('click', (e) => { if (e.target.id === 'name-prompt-modal') { handleInteractionForAudio(); closeNamePromptModal(); trackGAEvent('name_prompt_closed'); playSound('click', 'D4', '16n'); } });
     document.getElementById('name-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveName(false); } });
-    document.getElementById('close-achievement-modal-btn')?.addEventListener('click', () => { handleInteractionForAudio(); hideAchievementModal(); });
-    document.getElementById('achievement-detail-modal')?.addEventListener('click', (e) => { if (e.target.id === 'achievement-detail-modal') { handleInteractionForAudio(); hideAchievementModal(); } });
+    document.getElementById('close-achievement-modal-btn')?.addEventListener('click', () => { handleInteractionForAudio(); hideAchievementModal(); trackGAEvent('achievement_modal_closed'); });
+    document.getElementById('achievement-detail-modal')?.addEventListener('click', (e) => { if (e.target.id === 'achievement-detail-modal') { handleInteractionForAudio(); hideAchievementModal(); trackGAEvent('achievement_modal_closed'); } });
     document.getElementById('onboarding-modal')?.addEventListener('click', (e) => {
         if (e.target.matches('.onboarding-btn')) {
             handleInteractionForAudio();
             const buttonId = e.target.id; let playNavSound = true; let soundNote = 'C5';
+            const currentStepEl = e.target.closest('.onboarding-step');
+            const currentStepNumber = currentStepEl ? parseInt(currentStepEl.id.split('-').pop()) : 0;
+            trackGAEvent('onboarding_step_interaction', { step: currentStepNumber, button_id: buttonId });
+
             if (buttonId === 'onboarding-next-1') goToOnboardingStep(2);
             else if (buttonId === 'onboarding-prev-2') { goToOnboardingStep(1); soundNote = 'A4'; }
             else if (buttonId === 'onboarding-next-2') { if (handleSaveName(true)) goToOnboardingStep(3); else playNavSound = false; }
@@ -593,31 +652,38 @@ function setupEventListeners() {
             else { updatePillarSelectionCounter(checkedCheckboxes.length, requiredCount); playSound('click', 'D4', '16n'); }
         }
     });
-    document.getElementById('guide-toggle-btn')?.addEventListener('click', function() { handleInteractionForAudio(); toggleCollapsibleSection(this, 'guide-content-area'); playSound('click', this.getAttribute('aria-expanded') === 'true' ? 'F#4' : 'F4', '16n'); });
+    document.getElementById('guide-toggle-btn')?.addEventListener('click', function() {
+        handleInteractionForAudio();
+        const isExpanding = this.getAttribute('aria-expanded') === 'false'; // State *before* toggle
+        toggleCollapsibleSection(this, 'guide-content-area');
+        trackGAEvent('guide_toggled', { expanded: isExpanding });
+        playSound('click', isExpanding ? 'F#4' : 'F4', '16n');
+    });
     document.getElementById('habit-planner-toggle')?.addEventListener('click', function() {
         handleInteractionForAudio();
         const isExpanding = this.getAttribute('aria-expanded') === 'false';
         toggleCollapsibleSection(this, 'habit-planner-content', () => { if (isExpanding) { populatePillarSelect(); resetHabitPlanForm(); renderSavedHabitPlans(); } });
-        playSound('click', this.getAttribute('aria-expanded') === 'true' ? 'F#4' : 'F4', '16n');
+        trackGAEvent('planner_toggled', { expanded: isExpanding });
+        playSound('click', isExpanding ? 'F#4' : 'F4', '16n');
     });
     document.getElementById('habit-plan-form')?.addEventListener('submit', handleSaveHabitPlan);
     ['habit-plan-activity', 'habit-plan-cue', 'habit-plan-anchor'].forEach(inputId => { document.getElementById(inputId)?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const form = e.target.closest('form'); form?.querySelector('button[type="submit"]')?.click(); } }); });
-    document.querySelectorAll('input[name="planType"]')?.forEach(radio => { radio.addEventListener('change', () => { handleInteractionForAudio(); togglePlanTypeInputs(); playSound('click', 'C4', '16n'); }); });
+    document.querySelectorAll('input[name="planType"]')?.forEach(radio => { radio.addEventListener('change', (e) => { handleInteractionForAudio(); togglePlanTypeInputs(); trackGAEvent('planner_type_changed', { type: e.target.value }); playSound('click', 'C4', '16n'); }); });
     document.getElementById('saved-plans-display')?.addEventListener('click', (e) => {
         const planId = e.target.dataset.planId; if (!planId) return;
-        if (e.target.classList.contains('edit-plan-btn')) { handleInteractionForAudio(); handleEditHabitPlan(planId); playSound('click', 'E5', '16n'); showToast("Editing plan...", "info", 4000); }
-        else if (e.target.classList.contains('delete-plan-btn')) handleDeleteHabitPlan(planId);
+        if (e.target.classList.contains('edit-plan-btn')) { handleInteractionForAudio(); handleEditHabitPlan(planId); trackGAEvent('planner_edit_initiated'); playSound('click', 'E5', '16n'); showToast("Editing plan...", "info", 4000); }
+        else if (e.target.classList.contains('delete-plan-btn')) handleDeleteHabitPlan(planId); // GA event inside handler
     });
     document.getElementById('delete-habit-plan-btn')?.addEventListener('click', function() { const planIdInput = document.getElementById('habit-plan-id'); if (planIdInput?.value) handleDeleteHabitPlan(planIdInput.value); });
-    document.getElementById('export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); });
-    document.getElementById('import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); playSound('click', 'D5', '16n'); });
-    document.getElementById('close-settings-modal-btn')?.addEventListener('click', () => { handleInteractionForAudio(); hideSettingsModal(); playSound('click', 'A4', '16n'); });
-    document.getElementById('settings-modal')?.addEventListener('click', (e) => { if (e.target.id === 'settings-modal') { handleInteractionForAudio(); hideSettingsModal(); playSound('click', 'A4', '16n'); } });
+    document.getElementById('export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); trackGAEvent('data_exported'); });
+    document.getElementById('import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); trackGAEvent('data_import_triggered'); playSound('click', 'D5', '16n'); });
+    document.getElementById('close-settings-modal-btn')?.addEventListener('click', () => { handleInteractionForAudio(); hideSettingsModal(); trackGAEvent('settings_closed'); playSound('click', 'A4', '16n'); });
+    document.getElementById('settings-modal')?.addEventListener('click', (e) => { if (e.target.id === 'settings-modal') { handleInteractionForAudio(); hideSettingsModal(); trackGAEvent('settings_closed'); playSound('click', 'A4', '16n'); } });
     document.getElementById('settings-form')?.addEventListener('submit', handleSaveSettings);
     document.getElementById('settings-name-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('save-settings-btn')?.click(); } });
     document.getElementById('settings-form')?.addEventListener('change', (e) => {
-        if (e.target.matches('input[name="settingsMode"]')) { handleInteractionForAudio(); updateSettingsModalVisibility(); playSound('click', 'C4', '16n'); }
-        else if (e.target.matches('input[name="settingsSimpleModePillarCount"]')) { handleInteractionForAudio(); updateSettingsPillarCounter(); playSound('click', 'C4', '16n'); }
+        if (e.target.matches('input[name="settingsMode"]')) { handleInteractionForAudio(); updateSettingsModalVisibility(); trackGAEvent('settings_mode_radio_changed', { new_mode: e.target.value }); playSound('click', 'C4', '16n'); }
+        else if (e.target.matches('input[name="settingsSimpleModePillarCount"]')) { handleInteractionForAudio(); updateSettingsPillarCounter(); trackGAEvent('settings_simple_count_changed', { count: e.target.value }); playSound('click', 'C4', '16n'); }
         else if (e.target.matches('input[name="settingsPillars"]')) {
              handleInteractionForAudio();
              const listContainer = document.getElementById('settings-pillar-checklist');
@@ -628,17 +694,17 @@ function setupEventListeners() {
              else { updateSettingsPillarCounter(); playSound('click', 'D4', '16n'); }
         }
     });
-    document.getElementById('settings-change-pillars-btn')?.addEventListener('click', () => { handleInteractionForAudio(); enableSimpleModeEditing(); playSound('click', 'E4', '16n'); });
-    document.getElementById('settings-export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); });
-    document.getElementById('settings-import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); playSound('click', 'D5', '16n'); hideSettingsModal(); });
+    document.getElementById('settings-change-pillars-btn')?.addEventListener('click', () => { handleInteractionForAudio(); enableSimpleModeEditing(); trackGAEvent('settings_change_pillars_clicked'); playSound('click', 'E4', '16n'); });
+    document.getElementById('settings-export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); trackGAEvent('data_exported_from_settings'); });
+    document.getElementById('settings-import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); trackGAEvent('data_import_triggered_from_settings'); playSound('click', 'D5', '16n'); hideSettingsModal(); });
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            if (document.getElementById('settings-modal')?.classList.contains('visible')) { handleInteractionForAudio(); hideSettingsModal(); }
-            else if (document.getElementById('achievement-detail-modal')?.classList.contains('visible')) { handleInteractionForAudio(); hideAchievementModal(); }
-            else if (document.getElementById('name-prompt-modal')?.classList.contains('visible')) { handleInteractionForAudio(); closeNamePromptModal(); playSound('click', 'D4', '16n'); }
-            else if (document.getElementById('welcome-modal')?.classList.contains('visible')) { handleInteractionForAudio(); closeWelcomeModal(); playSound('click', 'D4', '16n'); }
-            else if (document.getElementById('guide-toggle-btn')?.getAttribute('aria-expanded') === 'true') { handleInteractionForAudio(); closeGuide(); playSound('click', 'F4', '16n'); }
-            else if (deselectMood()) { handleInteractionForAudio(); }
+            if (document.getElementById('settings-modal')?.classList.contains('visible')) { handleInteractionForAudio(); hideSettingsModal(); trackGAEvent('settings_closed_esc'); }
+            else if (document.getElementById('achievement-detail-modal')?.classList.contains('visible')) { handleInteractionForAudio(); hideAchievementModal(); trackGAEvent('achievement_modal_closed_esc'); }
+            else if (document.getElementById('name-prompt-modal')?.classList.contains('visible')) { handleInteractionForAudio(); closeNamePromptModal(); trackGAEvent('name_prompt_closed_esc'); playSound('click', 'D4', '16n'); }
+            else if (document.getElementById('welcome-modal')?.classList.contains('visible')) { handleInteractionForAudio(); closeWelcomeModal(); trackGAEvent('welcome_modal_closed_esc'); playSound('click', 'D4', '16n'); }
+            else if (document.getElementById('guide-toggle-btn')?.getAttribute('aria-expanded') === 'true') { handleInteractionForAudio(); closeGuide(); trackGAEvent('guide_closed_esc'); playSound('click', 'F4', '16n'); }
+            else if (deselectMood()) { handleInteractionForAudio(); trackGAEvent('mood_deselected_esc'); }
         }
     });
     const mainContentArea = document.querySelector('main');
@@ -647,7 +713,6 @@ function setupEventListeners() {
         mainContentArea.addEventListener('touchmove', handleTouchMove, { passive: true });
         mainContentArea.addEventListener('touchend', handleTouchEnd);
     }
-
     document.getElementById('timeline-entries')?.addEventListener('click', (e) => {
         const target = e.target;
         const editButton = target.closest('.edit-note-btn');
@@ -659,8 +724,9 @@ function setupEventListeners() {
 }
 
 function handleShowCalendarTab() {
-    toggleAnalyticsVisibility(false);
+    toggleAnalyticsVisibility(false); // This might trigger a GA event if visibility changes
     showTab('calendar');
+    trackGAEvent('view_tab', { tab_id: 'calendar', source: 'click_or_swipe' });
     const state = getState();
     if (state && state.currentMonth !== undefined && state.currentYear !== undefined) {
         const firstUsage = findFirstUsageDate(state);
@@ -673,8 +739,9 @@ function handleShowCalendarTab() {
 
 function handleCalendarDayClick(dateStr) {
     handleInteractionForAudio();
-    handleDateChangeInput(dateStr);
+    handleDateChangeInput(dateStr); // GA event inside this for date_changed
     showTab('daily');
+    trackGAEvent('view_tab', { tab_id: 'daily', source: 'calendar_day_click' });
 }
 
 function handleMonthChange(delta) {
@@ -691,6 +758,7 @@ function handleMonthChange(delta) {
     const firstUsage = findFirstUsageDate(getState());
     renderCalendar(newMonth, newYear, firstUsage, handleCalendarDayClick);
     playSound('navigate', delta > 0 ? 'E5' : 'C5', '16n');
+    // GA event for month change is now inside the prev/next month button listeners
 }
 
 document.addEventListener("DOMContentLoaded", init);
