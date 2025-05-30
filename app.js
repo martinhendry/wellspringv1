@@ -1,6 +1,12 @@
 // app.js
 
-// ... (all existing imports) ...
+/**
+ * Main application logic for WellSpring.
+ * ... (other comments)
+ * *** MODIFIED: Deferred UI initialization for non-active tabs. ***
+ */
+
+// --- Core Modules ---
 import {
     loadState, saveState, getState, getStateReference, updateCurrentDate,
     addTimelineEntry, saveDay, unlockDayEntry, updateMood, toggleSoundEnabled,
@@ -15,6 +21,8 @@ import { checkAchievements } from './achievementlogic.js';
 import { exportData, setupImportListener } from './datamanagement.js';
 import { initializeAudio, playSound, handleInteractionForAudio } from './audio.js';
 import { findFirstUsageDate, getWeekNumber, calculateLevelData, escapeHtml, formatDate } from './utils.js';
+
+// --- UI Modules ---
 import { initTheme, toggleTheme, updateAudioToggleButton, showToast, showTab, updateUIVisibilityForMode } from './ui/globalUI.js';
 import { refreshDailyLogUI, handlePillarClick, handleMoodClick, deselectMood, resetDateDisplay } from './ui/dailyLogUI.js';
 import { renderCalendar } from './ui/calendarUI.js';
@@ -29,7 +37,7 @@ import { showDatePicker } from './ui/datePickerUI.js';
 import { showSettingsModal as uiShowSettingsModal, hideSettingsModal, updateSettingsModalVisibility, updateSettingsPillarCounter, enableSimpleModeEditing } from './ui/settingsUI.js';
 
 
-// ... (Constants, Module State, GA4 Helper, Notification Helpers) ...
+// --- Constants ---
 const SAVE_DELAY = 350;
 const SWIPE_THRESHOLD = 50;
 const SWIPE_MAX_VERTICAL = 75;
@@ -37,19 +45,29 @@ const BACKUP_REMINDER_INTERVAL_DAYS = 30;
 const MIN_SAVED_DAYS_FOR_BACKUP_REMINDER = 7;
 const DAYS_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
+// --- State ---
 let saveTimeoutId = null;
 let currentAnalyticsView = 'stats';
 let touchStartX = 0;
 let touchStartY = 0;
 let touchEndX = 0;
 let touchEndY = 0;
+// --- START NEW: Flags for one-time UI initializations ---
+let journeyTabInitialized = false;
+let achievementsTabInitialized = false;
+// Planner select is initialized on expand, calendar on tab show by handleShowCalendarTab
+// --- END NEW ---
 
+
+// --- GA4 Event Tracking Helper ---
 function trackGAEvent(eventName, eventParams = {}) {
     if (typeof gtag === 'function') {
         gtag('event', eventName, eventParams);
     }
 }
 
+// --- Notification Helper Functions ---
+// ... (updateNotificationPermissionStatusDisplay, requestNotificationPermission, showLocalNotification)
 function updateNotificationPermissionStatusDisplay() {
     const statusEl = document.getElementById('notification-permission-status');
     const enableBtn = document.getElementById('enable-notifications-btn');
@@ -122,6 +140,9 @@ async function showLocalNotification(title, options) {
     }
 }
 
+
+// --- Reminder Logic Functions ---
+// ... (checkAndShowBackupReminder, checkAndShowMissedDayReminder) ...
 function checkAndShowBackupReminder() {
     const state = getState();
     if (!state.isOnboardingComplete || Notification.permission !== 'granted') return;
@@ -168,13 +189,11 @@ function init() {
     loadState();
     initTheme();
     initializeAudio();
-    registerServiceWorker(); // Ensure this function is defined below
+    registerServiceWorker();
     updateAudioToggleButton();
 
-    // --- MODIFICATION: Defer these calls ---
-    // populatePillarSelect(); // Problematic if planner elements not in DOM yet
-    // setupAutoResizeTextarea(); // Problematic if journey tab not active
-    // --- END MODIFICATION ---
+    // populatePillarSelect(); // Moved to planner expand
+    // setupAutoResizeTextarea(); // Moved to journey tab activation
 
     setupImportListener();
     const initialStateData = getState();
@@ -185,11 +204,10 @@ function init() {
     showTab('daily'); // Show initial tab
     trackGAEvent('view_tab', { tab_id: 'daily' });
 
-    // --- MODIFICATION: Defer refreshDailyLogUI ---
+    // Defer initial daily log refresh to ensure DOM is ready
     requestAnimationFrame(() => {
-        refreshDailyLogUI(); // Render daily log
+        refreshDailyLogUI();
     });
-    // --- END MODIFICATION ---
 
     setupEventListeners();
     updateNotificationPermissionStatusDisplay();
@@ -200,7 +218,7 @@ function init() {
         console.log(`[App] Date parameter found in URL: ${dateParam}. Setting current date.`);
         updateCurrentDate(dateParam);
         resetDateDisplay();
-        requestAnimationFrame(() => { // Also defer this refresh
+        requestAnimationFrame(() => {
              refreshDailyLogUI();
         });
         showTab('daily');
@@ -216,7 +234,7 @@ function init() {
             showNamePromptModal();
             trackGAEvent('name_prompt_shown');
         }
-        // refreshDailyLogUI(); // Already called above via requestAnimationFrame
+        // refreshDailyLogUI(); // Already called via requestAnimationFrame
         setTimeout(() => {
             if (Notification.permission === 'granted') {
                 checkAndShowBackupReminder();
@@ -230,7 +248,7 @@ function init() {
 }
 
 // --- Service Worker Registration ---
-function registerServiceWorker() { // Ensure this function is defined
+function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
@@ -247,7 +265,6 @@ function registerServiceWorker() { // Ensure this function is defined
 }
 
 // --- Debounced Saving ---
-// ... (setupDebouncedSave and handleStateChangeForSave) ...
 function setupDebouncedSave() {
     document.removeEventListener('stateChanged', handleStateChangeForSave);
     document.addEventListener('stateChanged', handleStateChangeForSave);
@@ -262,9 +279,7 @@ function handleStateChangeForSave(e) {
 }
 
 
-// --- Event Handlers ---
-// ... (All other event handlers like handleDateChangeInput, handleSaveDay, etc.) ...
-// ... (Make sure the setupEventListeners function is complete and correct) ...
+// --- Event Handlers (abbreviated, full logic from previous version wellspring_app_reminders_1) ---
 function handleDateChangeInput(newDateString) {
     handleInteractionForAudio();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateString)) { showToast("Invalid date selected.", "error"); resetDateDisplay(); return; }
@@ -453,7 +468,7 @@ function handleTouchEnd(event) {
             const nextTabButton = tabButtons[nextTabIndex]; const nextTabId = nextTabButton?.dataset.tab;
             if (nextTabId) {
                  if (nextTabId === 'calendar') { handleShowCalendarTab(); }
-                 else if (nextTabId === 'journey') { renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
+                 else if (nextTabId === 'journey') { renderTimeline(); updateTimelineControls(); setupAutoResizeTextarea(); updateNoteHeaderPrompt(); showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
                  else if (nextTabId === 'achievements') { renderAchievementBoard(); showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' }); }
                  else { showTab(nextTabId); trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });}
                  playSound('navigate', deltaX < 0 ? 'E5' : 'C5', '16n');
@@ -465,8 +480,6 @@ function handleTouchEnd(event) {
 function appShowSettingsModal() { handleInteractionForAudio(); uiShowSettingsModal(); updateNotificationPermissionStatusDisplay(); trackGAEvent('settings_opened'); playSound('click', 'B4', '16n'); }
 
 // --- Event Listener Setup ---
-// (This function needs to be fully defined as in the previous version,
-//  including the listener for #enable-notifications-btn)
 function setupEventListeners() {
     console.log("[App] Setting up event listeners...");
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
@@ -482,18 +495,45 @@ function setupEventListeners() {
     });
     document.getElementById('audio-toggle')?.addEventListener('click', () => { handleInteractionForAudio(); toggleSoundEnabled(); updateAudioToggleButton(); const soundEnabled = getStateReference().isSoundEnabled; trackGAEvent('sound_toggled', { enabled: soundEnabled }); playSound('click', soundEnabled ? 'C5' : 'C4', '8n'); });
     document.getElementById('settings-btn')?.addEventListener('click', appShowSettingsModal);
+
     document.querySelector('.nav-tabs')?.addEventListener('click', (e) => {
         if (e.target.matches('.tab-button')) {
             handleInteractionForAudio();
             const tabId = e.target.dataset.tab;
             if (tabId) {
-                if (tabId === 'calendar') handleShowCalendarTab();
-                else if (tabId === 'journey') { renderTimeline(); updateTimelineControls(); updateNoteHeaderPrompt(); showTab(tabId); trackGAEvent('view_tab', { tab_id: tabId, source: 'click' }); }
-                else if (tabId === 'achievements') { renderAchievementBoard(); showTab(tabId); trackGAEvent('view_tab', { tab_id: tabId, source: 'click' }); }
-                else { showTab(tabId); trackGAEvent('view_tab', { tab_id: tabId, source: 'click' }); }
+                // --- START MODIFICATION: Call UI setups on tab switch ---
+                if (tabId === 'calendar') {
+                    handleShowCalendarTab(); // This already handles its rendering
+                } else if (tabId === 'journey') {
+                    showTab(tabId); // Show tab first
+                    if (!journeyTabInitialized) {
+                        setupAutoResizeTextarea();
+                        journeyTabInitialized = true;
+                    }
+                    renderTimeline(); // Always render
+                    updateTimelineControls();
+                    updateNoteHeaderPrompt();
+                    trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
+                } else if (tabId === 'achievements') {
+                    showTab(tabId); // Show tab first
+                    if (!achievementsTabInitialized) {
+                        // Potentially other one-time setups for achievements tab
+                        achievementsTabInitialized = true;
+                    }
+                    renderAchievementBoard(); // Always render
+                    trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
+                } else { // For 'daily' or any other tabs
+                    showTab(tabId);
+                    if (tabId === 'daily') {
+                        refreshDailyLogUI(); // Ensure daily log is fresh if explicitly clicked
+                    }
+                    trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
+                }
+                // --- END MODIFICATION ---
             }
         }
     });
+    // ... (rest of event listeners from wellspring_app_reminders_1, ensuring #enable-notifications-btn listener is present)
     document.getElementById('prev-day-btn')?.addEventListener('click', () => handleDateArrowChange(-1));
     document.getElementById('next-day-btn')?.addEventListener('click', () => handleDateArrowChange(1));
     document.getElementById('formatted-date')?.addEventListener('click', handleShowDatePicker);
@@ -582,7 +622,19 @@ function setupEventListeners() {
         }
     });
     document.getElementById('guide-toggle-btn')?.addEventListener('click', function() { handleInteractionForAudio(); const isExpanding = this.getAttribute('aria-expanded') === 'false'; toggleCollapsibleSection(this, 'guide-content-area'); trackGAEvent('guide_toggled', { expanded: isExpanding }); playSound('click', isExpanding ? 'F#4' : 'F4', '16n'); });
-    document.getElementById('habit-planner-toggle')?.addEventListener('click', function() { handleInteractionForAudio(); const isExpanding = this.getAttribute('aria-expanded') === 'false'; toggleCollapsibleSection(this, 'habit-planner-content', () => { if (isExpanding) { populatePillarSelect(); resetHabitPlanForm(); renderSavedHabitPlans(); } }); trackGAEvent('planner_toggled', { expanded: isExpanding }); playSound('click', isExpanding ? 'F#4' : 'F4', '16n'); });
+    document.getElementById('habit-planner-toggle')?.addEventListener('click', function() {
+        handleInteractionForAudio();
+        const isExpanding = this.getAttribute('aria-expanded') === 'false';
+        toggleCollapsibleSection(this, 'habit-planner-content', () => {
+            if (isExpanding) {
+                populatePillarSelect(); // Initialize planner selects on first expand
+                resetHabitPlanForm();
+                renderSavedHabitPlans();
+            }
+        });
+        trackGAEvent('planner_toggled', { expanded: isExpanding });
+        playSound('click', isExpanding ? 'F#4' : 'F4', '16n');
+    });
     document.getElementById('habit-plan-form')?.addEventListener('submit', handleSaveHabitPlan);
     ['habit-plan-activity', 'habit-plan-cue', 'habit-plan-anchor'].forEach(inputId => { document.getElementById(inputId)?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const form = e.target.closest('form'); form?.querySelector('button[type="submit"]')?.click(); } }); });
     document.querySelectorAll('input[name="planType"]')?.forEach(radio => { radio.addEventListener('change', (e) => { handleInteractionForAudio(); togglePlanTypeInputs(); trackGAEvent('planner_type_changed', { type: e.target.value }); playSound('click', 'C4', '16n'); }); });
@@ -642,7 +694,7 @@ function setupEventListeners() {
 }
 
 function handleShowCalendarTab() {
-    toggleAnalyticsVisibility(false);
+    toggleAnalyticsVisibility(false); // Ensure analytics is hidden
     showTab('calendar');
     trackGAEvent('view_tab', { tab_id: 'calendar', source: 'click_or_swipe' });
     const state = getState();
@@ -657,9 +709,10 @@ function handleShowCalendarTab() {
 
 function handleCalendarDayClick(dateStr) {
     handleInteractionForAudio();
-    handleDateChangeInput(dateStr);
-    showTab('daily');
+    handleDateChangeInput(dateStr); // This updates state and refreshes daily log UI
+    showTab('daily'); // Switch to daily log tab
     trackGAEvent('view_tab', { tab_id: 'daily', source: 'calendar_day_click' });
+    // No need to call refreshDailyLogUI() here as handleDateChangeInput should trigger it
 }
 
 function handleMonthChange(delta) {
