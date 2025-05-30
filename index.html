@@ -531,16 +531,22 @@
                       </div>
                  </section>
 
-                 <section class="guide-section">
-                    <h3>🔒 Your Privacy & Data</h3>
+                <section class="guide-section">
+                    <h3>🔒 Your Data & Privacy</h3>
                     <p>Your privacy is a top priority at WellSpring. We want you to feel secure and in control of your information.</p>
 
-                    <h4>Core Data Storage: Only On Your Device</h4>
+                    <h4>Core Data Storage & Control: Only On Your Device</h4>
                     <ul>
                         <li><strong>Local Storage:</strong> All your personal tracking data – including your daily pillar logs, mood entries, notes on the Journey timeline, achievement progress, and settings – is stored exclusively in your browser's local storage on your device.</li>
                         <li><strong>No Server-Side Storage:</strong> This data is <strong>not</strong> sent to, collected by, or stored on any external servers or databases managed by WellSpring. We do not have a backend system for your personal tracking data.</li>
-                        <li><strong>You're in Control:</strong> You have full control over your data. You can export a backup of all your information at any time using the "Download Backup" feature in the Settings modal or the Help & Info section. You can also import this data back into the app on any device.</li>
+                        <li><strong>You're in Control (Backup & Restore):</strong> You have full control over your data. Use the buttons below to download a backup file (JSON format) of all your information at any time. You can also import this data back into the app on any device. <strong>Warning:</strong> Restoring will overwrite current data.</li>
+                        <li><strong>Browser Specificity:</strong> Please note that your data is saved to the specific browser you are using. To access your saved data across different devices (like desktop and mobile), you would need to use the export/import feature.</li>
                     </ul>
+                    <div class="data-actions" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                        <button class="data-btn" id="export-data-btn">⬇️ Download Backup</button>
+                        <button class="data-btn" id="import-data-trigger-btn">⬆️ Restore Backup</button>
+                        <input type="file" id="file-input" accept=".json" style="display:none" aria-hidden="true" />
+                    </div>
 
                     <h4>Usage Analytics with Google Analytics 4 (GA4)</h4>
                     <p>To help us understand how WellSpring is used and to improve its features and user experience, we use Google Analytics 4 (GA4). Here’s what this means for you:</p>
