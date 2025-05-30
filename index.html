@@ -377,47 +377,61 @@
                         <p>Experiment to find combinations that work best for your wellbeing!</p>
                      </section>
 
-                     <section class="guide-section">
-                        <h3>🔒 Your Data & Privacy</h3>
-                        <p>Your privacy is a top priority at WellSpring. We want you to feel secure and in control of your information.</p>
+                 <section class="guide-section">
+                    <h3>🔒 Your Data & Privacy</h3>
+                    <p>Your privacy is a top priority at WellSpring. We want you to feel secure and in control of your information.</p>
 
-                        <h4>Core Data Storage & Control: Only On Your Device</h4>
-                        <ul>
-                            <li><strong>Local Storage:</strong> All your personal tracking data – including your daily pillar logs, mood entries, notes on the Journey timeline, achievement progress, and settings – is stored exclusively in your browser's local storage on your device.</li>
-                            <li><strong>No Server-Side Storage:</strong> This data is <strong>not</strong> sent to, collected by, or stored on any external servers or databases managed by WellSpring. We do not have a backend system for your personal tracking data.</li>
-                            <li><strong>You're in Control (Backup & Restore):</strong> You have full control over your data. Use the buttons below to download a backup file (JSON format) of all your information at any time. You can also import this data back into the app on any device. <strong>Warning:</strong> Restoring will overwrite current data.</li>
-                            <li><strong>Browser Specificity:</strong> Please note that your data is saved to the specific browser you are using. To access your saved data across different devices (like desktop and mobile), you would need to use the export/import feature.</li>
-                        </ul>
-                        <div class="data-actions" style="margin-top: 0.5rem; margin-bottom: 1rem;">
-                            <button class="data-btn" id="export-data-btn">⬇️ Download Backup</button>
-                            <button class="data-btn" id="import-data-trigger-btn">⬆️ Restore Backup</button>
-                            <input type="file" id="file-input" accept=".json" style="display:none" aria-hidden="true" />
-                        </div>
+                    <h4>Core Data Storage & Control: Only On Your Device</h4>
+                    <ul>
+                        <li><strong>Local Storage:</strong> All your personal tracking data – including your daily pillar logs, mood entries, notes on the Journey timeline, achievement progress, and settings – is stored exclusively in your browser's local storage on your device.</li>
+                        <li><strong>No Server-Side Storage:</strong> This data is <strong>not</strong> sent to, collected by, or stored on any external servers or databases managed by WellSpring. We do not have a backend system for your personal tracking data.</li>
+                        <li><strong>You're in Control (Backup & Restore):</strong> You have full control over your data. Use the buttons below to download a backup file (JSON format) of all your information at any time. You can also import this data back into the app on any device. <strong>Warning:</strong> Restoring will overwrite current data.</li>
+                        <li><strong>Browser Specificity:</strong> Please note that your data is saved to the specific browser you are using. To access your saved data across different devices (like desktop and mobile), you would need to use the export/import feature.</li>
+                    </ul>
+                    <div class="data-actions" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                        <button class="data-btn" id="export-data-btn">⬇️ Download Backup</button>
+                        <button class="data-btn" id="import-data-trigger-btn">⬆️ Restore Backup</button>
+                        <input type="file" id="file-input" accept=".json" style="display:none" aria-hidden="true" />
+                    </div>
 
-                        <h4>Usage Analytics with Google Analytics 4 (GA4)</h4>
-                        <p>To help us understand how WellSpring is used and to improve its features and user experience, we use Google Analytics 4 (GA4). Here’s what this means for you:</p>
-                        <ul>
-                            <li><strong>Purpose of Analytics:</strong> GA4 helps us see which features are popular, how users navigate the app, identify areas for improvement, and understand general usage trends (e.g., how many people use the app, general geographic regions of users).</li>
-                            <li><strong>Aggregated & Anonymized Data:</strong> The information sent to GA4 is aggregated and helps us understand overall patterns. By default, GA4 is designed to not log or store full IP addresses.</li>
-                            <li><strong>What is NOT Tracked by GA4:</strong>
-                                <ul>
-                                    <li>The specific text content of your notes on the Journey timeline.</li>
-                                    <li>Personally identifiable details from your pillar logs or mood entries.</li>
-                                    <li>Your name, if you choose to provide it for personalization.</li>
-                                </ul>
-                            </li>
-                            <li><strong>What MAY Be Tracked by GA4 (General Usage Data):</strong>
-                                <ul>
-                                    <li>Events like which tabs are viewed, when a day is saved, when a note is added (but not the content), or when settings are changed.</li>
-                                    <li>General device characteristics (e.g., browser type, device category like desktop/mobile).</li>
-                                    <li>Approximate geographic location (derived from IP address, but IP addresses themselves are not stored by GA4).</li>
-                                    <li>App version and interaction with UI elements (e.g., button clicks for specific features).</li>
-                                </ul>
-                            </li>
-                            <li><strong>Google's Privacy Policy:</strong> For more information on how Google uses data when you use sites or apps that use Google Analytics, please visit <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">Google's Privacy & Terms</a>.</li>
-                        </ul>
-                        <p>Our use of GA4 is solely for the purpose of making WellSpring better for everyone. We are committed to ensuring that your personal and sensitive tracking data remains private and on your device.</p>
-                    </section>
+                    <h4>Usage Analytics with Google Analytics 4 (GA4)</h4>
+                    <p>To help us understand how WellSpring is used and to improve its features and user experience, we use Google Analytics 4 (GA4). Here’s what this means for you:</p>
+                    <ul>
+                        <li><strong>Purpose of Analytics:</strong> GA4 helps us see which features are popular, how users navigate the app, identify areas for improvement, and understand general usage trends (e.g., how many people use the app, general geographic regions of users).</li>
+                        <li><strong>Aggregated & Anonymized Data:</strong> The information sent to GA4 is aggregated and helps us understand overall patterns. By default, GA4 is designed to not log or store full IP addresses.</li>
+                        <li><strong>What is NOT Tracked by GA4:</strong>
+                            <ul>
+                                <li>The specific text content of your notes on the Journey timeline.</li>
+                                <li>Personally identifiable details from your pillar logs or mood entries.</li>
+                                <li>Your name, if you choose to provide it for personalization.</li>
+                            </ul>
+                        </li>
+                        <li><strong>What MAY Be Tracked by GA4 (General Usage Data):</strong>
+                            <ul>
+                                <li>Events like which tabs are viewed, when a day is saved, when a note is added (but not the content), or when settings are changed.</li>
+                                <li>General device characteristics (e.g., browser type, device category like desktop/mobile).</li>
+                                <li>Approximate geographic location (derived from IP address, but IP addresses themselves are not stored by GA4).</li>
+                                <li>App version and interaction with UI elements (e.g., button clicks for specific features).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Google's Privacy Policy:</strong> For more information on how Google uses data when you use sites or apps that use Google Analytics, please visit <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">Google's Privacy & Terms</a>.</li>
+                    </ul>
+
+                    <h4>Notification Reminders</h4>
+                    <p>If you choose to enable them in Settings, WellSpring can provide occasional reminders using your browser's notification system. These are managed by your browser and our app's local logic:</p>
+                    <ul>
+                        <li><strong>Purpose:</strong> Reminders are intended to help you stay consistent with logging your wellbeing and to encourage periodic data backups.</li>
+                        <li><strong>Types of Reminders:</strong>
+                            <ul>
+                                <li><strong>Missed Day Reminder:</strong> If you open the app and we detect that you may not have logged the previous day, you might receive a notification prompting you to log that day.</li>
+                                <li><strong>Backup Reminder:</strong> Periodically (e.g., every 30 days, if you have a significant amount of data and haven't recently exported), you may receive a reminder to back up your data.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Local Triggering:</strong> These reminders are triggered by logic within the app when it's running or when it next starts. They do not rely on an external server sending push messages based on your personal data.</li>
+                        <li><strong>Control:</strong> You can enable or disable notification permissions at any time via the Settings modal or your browser's site settings.</li>
+                    </ul>
+                    <p style="margin-top: 1rem;">Our use of GA4 and client-side notifications is solely for the purpose of making WellSpring better and more helpful for everyone. We are committed to ensuring that your personal and sensitive tracking data remains private and on your device.</p>
+                </section>
                     <section class="guide-section">
                         <h3>💖 Support WellSpring</h3>
                          <p>WellSpring is developed and maintained with care, offered completely free for everyone. Your privacy is respected - all data stays on your device.</p>
