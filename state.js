@@ -1,11 +1,9 @@
 // state.js
 
 /**
- * Manages the application state for WellSpring, including loading, saving,
- * accessing, and mutating data related to pillars, mood, timeline, achievements,
- * settings, and user progress.
- * *** MODIFIED: Adjusted XP calculation logic (v3). ***
- * *** MODIFIED: Added unique IDs to notes and functions to edit/delete notes. ***
+ * Manages the application state for WellSpring.
+ * ... (other comments)
+ * *** MODIFIED: Added state properties for notification reminder tracking. ***
  */
 
 // --- Imports ---
@@ -24,17 +22,26 @@ const XP_PER_NOTE = 10;
 let appState = {};
 
 const initialState = {
+    // Core Tracking
     currentDate: new Date().toISOString().split('T')[0],
     pillars: {},
     mood: {},
     savedDays: {},
+
+    // Gamification & Progress
     totalXP: 0,
     streak: 0,
     prestige: 0,
     level100ToastShownForCycle: null,
-    timeline: [], // Note entries will now have: { type: 'note', date, text, noteId, (optional) updatedAt }
+
+    // Journey & Achievements
+    timeline: [],
     achievements: {},
+
+    // Habit Planner
     habitPlans: {},
+
+    // Settings & User Info
     userName: null,
     userMode: null,
     simpleModePillarCount: null,
@@ -42,10 +49,17 @@ const initialState = {
     isOnboardingComplete: false,
     isSoundEnabled: true,
     showPlanner: false,
+
+    // UI State
     currentMonth: new Date().getMonth(),
     currentYear: new Date().getFullYear(),
     timelineSortOrder: 'newest',
     timelineFilter: 'all',
+
+    // --- START NEW: Notification Reminder Tracking ---
+    lastBackupReminderShown: null, // Timestamp (ISO string) of when the backup reminder was last shown
+    lastDataExportTime: null,      // Timestamp (ISO string) of the last successful data export
+    // --- END NEW: Notification Reminder Tracking ---
 };
 
 // --- State Initialization & Persistence ---
@@ -106,6 +120,11 @@ export function loadState() {
                     } else {
                          finalState[key] = (typeof loadedState[key] === 'number' || loadedState[key] === null) ? loadedState[key] : initialState[key];
                     }
+                // --- START NEW: Handle loading of new reminder state properties ---
+                } else if (key === 'lastBackupReminderShown' || key === 'lastDataExportTime') {
+                    // Ensure it's a string (ISO date) or null
+                    finalState[key] = (typeof loadedState[key] === 'string' || loadedState[key] === null) ? loadedState[key] : initialState[key];
+                // --- END NEW ---
                 } else {
                     if (typeof loadedState[key] === typeof initialState[key] || initialState[key] === null) {
                          finalState[key] = loadedState[key];
@@ -172,6 +191,7 @@ export function getStateReference() {
 }
 
 // --- State Mutators ---
+// ... (updateCurrentDate, togglePillarStatus, updateMood, addTimelineEntry, updateNoteInTimeline, deleteNoteFromTimeline, prestigeLevel, etc. - ALL EXISTING MUTATORS REMAIN HERE) ...
 
 export function updateCurrentDate(newDate) {
     if (typeof newDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
@@ -227,13 +247,9 @@ export function addTimelineEntry(entry) {
         console.error("[State] Invalid timeline entry provided:", entry);
         return;
     }
-
-    // Assign unique ID to notes if not present
     if (entry.type === 'note' && !entry.noteId) {
-        entry.noteId = crypto.randomUUID(); // Assign a unique ID
-        console.log(`[State] Assigned noteId: ${entry.noteId} to new note.`);
+        entry.noteId = crypto.randomUUID();
     }
-
     let alreadyExists = false;
     if (entry.type === 'achievement') {
         alreadyExists = appState.timeline.some(item => item?.type === 'achievement' && item.achievementId === entry.achievementId);
@@ -242,112 +258,62 @@ export function addTimelineEntry(entry) {
         alreadyExists = appState.timeline.some(item => item?.type === 'prestige' && item.prestigeLevel === entry.prestigeLevel);
         if (alreadyExists) return;
     }
-
     let xpAdded = 0;
     if (entry.type === 'note') {
         appState.totalXP = (appState.totalXP || 0) + XP_PER_NOTE;
         xpAdded = XP_PER_NOTE;
     }
-
     appState.timeline.unshift(entry);
     saveState('addTimelineEntry');
-
     if (xpAdded > 0) {
         checkAchievements(getStateReference());
     }
 }
 
-// --- START NEW FUNCTIONS: updateNoteInTimeline and deleteNoteFromTimeline ---
-/**
- * Updates the text of an existing note in the timeline.
- * @param {string} noteId - The unique ID of the note to update.
- * @param {string} newText - The new text for the note.
- * @returns {boolean} True if the note was found and updated, false otherwise.
- */
 export function updateNoteInTimeline(noteId, newText) {
-    if (!appState.timeline || !noteId || typeof newText !== 'string') {
-        console.error("[State] Invalid parameters for updateNoteInTimeline.", { noteId, newText });
-        return false;
-    }
+    if (!appState.timeline || !noteId || typeof newText !== 'string') return false;
     const noteIndex = appState.timeline.findIndex(entry => entry.type === 'note' && entry.noteId === noteId);
-
     if (noteIndex !== -1) {
         const trimmedText = newText.trim();
-        if (trimmedText === "") {
-            // If new text is empty, consider it a deletion or inform user
-            console.warn("[State] Attempted to update note with empty text. Deleting instead or provide feedback.");
-             // Optionally, call deleteNoteFromTimeline here or handle in UI
-            return deleteNoteFromTimeline(noteId); // Example: delete if empty
-        }
+        if (trimmedText === "") return deleteNoteFromTimeline(noteId);
         appState.timeline[noteIndex].text = trimmedText;
-        appState.timeline[noteIndex].updatedAt = new Date().toISOString(); // Add/update an 'updatedAt' timestamp
+        appState.timeline[noteIndex].updatedAt = new Date().toISOString();
         saveState('updateNoteInTimeline');
-        console.log(`[State] Note updated: ${noteId}`);
         return true;
-    } else {
-        console.warn(`[State] Note not found for update: ${noteId}`);
-        return false;
     }
+    return false;
 }
 
-/**
- * Deletes a note from the timeline.
- * @param {string} noteId - The unique ID of the note to delete.
- * @returns {boolean} True if the note was found and deleted, false otherwise.
- */
 export function deleteNoteFromTimeline(noteId) {
-    if (!appState.timeline || !noteId) {
-        console.error("[State] Invalid parameters for deleteNoteFromTimeline.", { noteId });
-        return false;
-    }
+    if (!appState.timeline || !noteId) return false;
     const initialLength = appState.timeline.length;
     appState.timeline = appState.timeline.filter(entry => !(entry.type === 'note' && entry.noteId === noteId));
-
     if (appState.timeline.length < initialLength) {
         saveState('deleteNoteFromTimeline');
-        console.log(`[State] Note deleted: ${noteId}`);
         return true;
-    } else {
-        console.warn(`[State] Note not found for deletion: ${noteId}`);
-        return false;
     }
+    return false;
 }
-// --- END NEW FUNCTIONS ---
-
 
 export function prestigeLevel() {
-    // ... (existing prestigeLevel function)
-    if (typeof calculateLevelData !== 'function') {
-        console.error("[State] calculateLevelData function is not available for prestige.");
-        return false;
-    }
+    if (typeof calculateLevelData !== 'function') return false;
     try {
         const levelData = calculateLevelData(appState.totalXP, appState.prestige);
         if (levelData.level >= 100) {
             const newCycleNumber = (appState.prestige || 0) + 1;
-            const cycleEntry = {
-                type: 'prestige',
-                date: new Date().toISOString(),
-                prestigeLevel: newCycleNumber
-            };
-            addTimelineEntry(cycleEntry);
+            addTimelineEntry({ type: 'prestige', date: new Date().toISOString(), prestigeLevel: newCycleNumber });
             appState.prestige = newCycleNumber;
             appState.totalXP = 0;
             appState.level100ToastShownForCycle = null;
             saveState('prestige');
             return true;
-        } else {
-            return false;
         }
-    } catch (error) {
-        console.error("[State] Error during prestigeLevel:", error);
         return false;
-    }
+    } catch (error) { return false; }
 }
 
 export function toggleSoundEnabled() {
-    const currentState = appState.isSoundEnabled ?? true;
-    appState.isSoundEnabled = !currentState;
+    appState.isSoundEnabled = !(appState.isSoundEnabled ?? true);
     saveState('toggleSound');
 }
 
@@ -369,39 +335,24 @@ export function updateTimelineFilter(newFilter) {
 export function setUserName(newName) {
     if (typeof newName === 'string') {
         const trimmedName = newName.trim();
-        if (trimmedName && appState.userName !== trimmedName) {
-            appState.userName = trimmedName;
-            saveState('setUserName');
-        } else if (!trimmedName && appState.userName !== null) {
-            appState.userName = null;
-            saveState('setUserName');
-        }
-    } else if (newName === null && appState.userName !== null) {
-        appState.userName = null;
-        saveState('setUserName');
-    }
+        if (trimmedName && appState.userName !== trimmedName) { appState.userName = trimmedName; saveState('setUserName'); }
+        else if (!trimmedName && appState.userName !== null) { appState.userName = null; saveState('setUserName'); }
+    } else if (newName === null && appState.userName !== null) { appState.userName = null; saveState('setUserName'); }
 }
 
 export function setUserMode(mode) {
-    if (mode === 'simple' || mode === 'full' || mode === null) {
-        if (appState.userMode !== mode) {
-            appState.userMode = mode;
-            if (mode === 'full' || mode === null) {
-                appState.simpleModePillarCount = null;
-                appState.simpleModePillars = [];
-            }
-            saveState('setUserMode');
-        }
+    if ((mode === 'simple' || mode === 'full' || mode === null) && appState.userMode !== mode) {
+        appState.userMode = mode;
+        if (mode === 'full' || mode === null) { appState.simpleModePillarCount = null; appState.simpleModePillars = []; }
+        saveState('setUserMode');
     }
 }
 
 export function setSimpleModePillarCount(count) {
     const validCounts = [3, 5, 7];
-    if (count === null || (typeof count === 'number' && validCounts.includes(count))) {
-        if (appState.simpleModePillarCount !== count) {
-            appState.simpleModePillarCount = count;
-            saveState('setSimpleModePillarCount');
-        }
+    if ((count === null || (typeof count === 'number' && validCounts.includes(count))) && appState.simpleModePillarCount !== count) {
+        appState.simpleModePillarCount = count;
+        saveState('setSimpleModePillarCount');
     }
 }
 
@@ -414,9 +365,7 @@ export function setSimpleModePillars(selectedPillars) {
 }
 
 export function unlockAchievement(achievementId) {
-    if (!appState.achievements || !appState.achievements[achievementId] || appState.achievements[achievementId].unlocked) {
-        return false;
-    }
+    if (!appState.achievements || !appState.achievements[achievementId] || appState.achievements[achievementId].unlocked) return false;
     const unlockDate = new Date().toISOString();
     const achievementName = appState.achievements[achievementId].name || 'Achievement';
     appState.achievements[achievementId].unlocked = true;
@@ -428,32 +377,17 @@ export function unlockAchievement(achievementId) {
 }
 
 export function saveHabitPlan(planData) {
-    if (!planData || typeof planData !== 'object' || !planData.id || !planData.type || !planData.pillarId || !planData.activityDescription) {
-        return false;
-    }
+    if (!planData || typeof planData !== 'object' || !planData.id || !planData.type || !planData.pillarId || !planData.activityDescription) return false;
     if (!appState.habitPlans) appState.habitPlans = {};
     const planId = planData.id;
     const isUpdating = !!appState.habitPlans[planId];
-    const finalPlan = {
-        id: planId,
-        type: planData.type,
-        pillarId: planData.pillarId,
-        activityDescription: planData.activityDescription,
-        cue: (planData.type === 'intention') ? (planData.cue || null) : null,
-        anchorHabit: (planData.type === 'stacking') ? (planData.anchorHabit || null) : null,
-        secondaryPillarId: (planData.type === 'stacking') ? (planData.secondaryPillarId || null) : null,
-        createdAt: isUpdating ? (appState.habitPlans[planId].createdAt) : (planData.createdAt || new Date().toISOString()),
-        updatedAt: new Date().toISOString()
-    };
-    appState.habitPlans[planId] = finalPlan;
+    appState.habitPlans[planId] = { ...planData, createdAt: isUpdating ? (appState.habitPlans[planId].createdAt) : (planData.createdAt || new Date().toISOString()), updatedAt: new Date().toISOString() };
     saveState(isUpdating ? 'updateHabitPlan' : 'addHabitPlan');
     return true;
 }
 
 export function deleteHabitPlan(planId) {
-    if (!planId || !appState.habitPlans || !appState.habitPlans[planId]) {
-        return false;
-    }
+    if (!planId || !appState.habitPlans || !appState.habitPlans[planId]) return false;
     delete appState.habitPlans[planId];
     saveState('deleteHabitPlan');
     return true;
@@ -498,8 +432,33 @@ export function setLevel100ToastShown(cycleNumber) {
     }
 }
 
+// --- START NEW: State mutators for reminder tracking ---
+/**
+ * Updates the timestamp for when the backup reminder was last shown.
+ */
+export function setLastBackupReminderShown() {
+    appState.lastBackupReminderShown = new Date().toISOString();
+    saveState('setLastBackupReminderShown');
+    console.log(`[State] Last backup reminder shown timestamp updated: ${appState.lastBackupReminderShown}`);
+}
+
+/**
+ * Updates the timestamp for the last successful data export.
+ */
+export function setLastDataExportTime() {
+    appState.lastDataExportTime = new Date().toISOString();
+    // This will also implicitly update when the next backup reminder might be due,
+    // so we can also reset the "last shown" if we want the reminder interval to restart after an export.
+    // appState.lastBackupReminderShown = null; // Optional: reset reminder shown time
+    saveState('setLastDataExportTime');
+    console.log(`[State] Last data export timestamp updated: ${appState.lastDataExportTime}`);
+}
+// --- END NEW: State mutators for reminder tracking ---
+
+
 // --- Internal Helper Functions ---
 function calculateStreak() {
+    // ... (existing calculateStreak function)
     const savedDates = Object.keys(appState.savedDays || {}).sort();
     let finalStreak = 0;
     if (savedDates.length > 0) {
@@ -544,6 +503,7 @@ function calculateStreak() {
 }
 
 function calculateXP(dateString) {
+    // ... (existing calculateXP function)
     if (!appState.pillars || !appState.mood) return;
     const baseXPPerPillar = 5;
     const streakBonusDivisor = 5;
