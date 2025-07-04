@@ -32,21 +32,11 @@
 <body>
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-    <div id="welcome-modal" class="modal-overlay" aria-modal="true" role="dialog" aria-labelledby="welcome-title">
-        <div class="modal-content">
-            <button class="modal-close-btn" aria-label="Close welcome message">&times;</button>
-            <h2 id="welcome-title">Welcome to WellSpring! 🌱</h2>
-            <p>Cultivate daily habits across 10 pillars, monitor your mood, and reflect on your journey. Your data stays private, stored only in your browser.</p>
-            <p>Click 'Save Day' on the 'Daily Log' tab to record your progress. Explore the 'Help & Info' section at the bottom for more details.</p>
-            <button id="dismiss-welcome-btn">Got it!</button>
-        </div>
-    </div>
-
     <div id="name-prompt-modal" class="modal-overlay" aria-modal="true" role="dialog" aria-labelledby="name-prompt-title">
         <div class="modal-content">
              <button class="modal-close-btn" aria-label="Close name prompt">&times;</button>
             <h2 id="name-prompt-title">What should we call you?</h2>
-            <p>Personalize your experience by entering your name.</p>
+            <p>Personalize your experience by entering your name. (You can change this later if you want.)</p>
             <div class="form-group">
                  <label for="name-input">Your Name:</label>
                  <input type="text" id="name-input" name="userName" placeholder="Enter your name" required autocomplete="name">
@@ -75,14 +65,14 @@
             <div class="onboarding-step active-step" id="onboarding-step-1">
                 <h2 id="onboarding-title">Welcome to WellSpring!</h2>
                 <p>Let's quickly set up your experience.</p>
-                 <p><small>This app helps you track daily wellbeing habits across 10 pillars. All data stays private on your device.</small></p>
+                 <p><small>This app helps you track daily wellbeing habits across 10 thematic pillars. You get to decide what they mean to you, and grow your habits and practice. All data stays private on your device.</small></p>
                 <div class="step-navigation">
                     <button id="onboarding-next-1" class="onboarding-btn next">Next &rarr;</button>
                 </div>
             </div>
             <div class="onboarding-step" id="onboarding-step-2" style="display: none;">
                 <h2>What should we call you?</h2>
-                <p>Personalize messages and achievements.</p>
+                <p>Personalise messages and achievements. (You can change this later if you want.)</p>
                 <div class="form-group">
                     <label for="onboarding-name-input">Your Name:</label>
                     <input type="text" id="onboarding-name-input" name="onboardingUserName" placeholder="Enter your name" required autocomplete="name">
@@ -96,17 +86,18 @@
                 <h2>Choose Your Experience</h2>
                 <p>Select how you'd like to use WellSpring:</p>
                 <fieldset class="form-group">
+                    <p>We offer 2 separate modes. A fully featured mode where you can track all 10 different wellbeing pillars, or a simpler mode if you'd like to start smaller. You can change this at any time in the options and you will not lose any progress.</p>
                     <legend>Select Mode:</legend>
                     <div>
                         <input type="radio" id="mode-full" name="onboardingMode" value="full" checked>
                         <label for="mode-full">
-                            <strong>Full Mode:</strong> Access all features including habit planning, analytics, achievements, and detailed tracking.
+                            <strong>Full Mode:</strong> Access all features, including all 10 wellbeing pillars, analytics, achievements, and detailed tracking.
                         </label>
                     </div>
                     <div>
                         <input type="radio" id="mode-simple" name="onboardingMode" value="simple">
                         <label for="mode-simple">
-                            <strong>Simple Mode:</strong> A streamlined view focused only on daily pillar and mood logging. Hides advanced features like the planner and analytics. Good if you want to keep it simple to begin with!
+                            <strong>Simple Mode:</strong> A streamlined view focused only on a smaller number of daily wellbeing pillars and mood logging. Hides advanced features like the planner and analytics. Good if you want to keep it simple to begin with!
                         </label>
                     </div>
                 </fieldset>
@@ -117,8 +108,8 @@
                 </div>
             </div>
             <div class="onboarding-step" id="onboarding-step-4" style="display: none;">
-                <h2>Simple Mode: How many pillars?</h2>
-                <p>Choose the number of pillars you want to focus on daily.</p>
+                <h2>Simple Mode: How many pillars would you like to track?</h2>
+                <p>Choose the number of pillars you want to focus on daily. You can specify which ones next (and change this at any time without losing progress).</p>
                 <fieldset class="form-group">
                     <legend>Number of Pillars:</legend>
                     <div>
@@ -148,7 +139,7 @@
                 <p id="pillar-selection-counter" class="pillar-selection-info">Selected: 0 / X</p>
                 <div class="step-navigation">
                     <button id="onboarding-prev-5" class="onboarding-btn prev">&larr; Previous</button>
-                    <button id="onboarding-finish" class="onboarding-btn save">Save Settings & Start &rarr;</button>
+                    <button id="onboarding-finish" class="onboarding-btn save">Save Settings & Get Started &rarr;</button>
                 </div>
             </div>
         </div>
@@ -163,7 +154,7 @@
                 <div class="form-group">
                     <label for="settings-name-input">Your Name:</label>
                     <input type="text" id="settings-name-input" name="settingsUserName" placeholder="Enter your name" autocomplete="name">
-                    <small>Used for personalized messages and achievements.</small>
+                    <small>Used for personalised messages and achievements. (You can change this whenever you'd like)</small>
                 </div>
 
                 <fieldset class="form-group">
@@ -171,7 +162,7 @@
                     <div>
                         <input type="radio" id="settings-mode-full" name="settingsMode" value="full">
                         <label for="settings-mode-full">
-                            <strong>Full Mode:</strong> All features enabled (Planner, Analytics, Achievements).
+                            <strong>Full Mode:</strong> All features enabled (10 Pillars, Analytics, Achievements).
                         </label>
                     </div>
                     <div>
@@ -213,26 +204,17 @@
                 <div id="settings-planner-toggle-container" class="form-group" style="display: none; border-top: 1px dashed var(--border-color); padding-top: 1rem; margin-top: 1rem;">
                     <label for="settings-planner-toggle" class="checkbox-label">
                         <input type="checkbox" id="settings-planner-toggle" name="settingsShowPlanner">
-                        Show Habit Planner Section
+                        Show Habit Planner Section (Beta)
                     </label>
-                    <small>Toggle the visibility of the Habit Planner section on the Daily Log tab (only applies in Full Mode).</small>
+                    <small>Toggle the visibility of the Habit Planner section on the Daily Log tab (only applies in Full Mode). This allows you to save "triggered" and "stacked" habit plans. This has been proven to be effective in helping people create systems of habits which help their well-being.</small>
                 </div>
-
-                <fieldset class="form-group" style="border-top: 1px dashed var(--border-color); padding-top: 1rem; margin-top: 1rem;">
-                    <legend>Notification Preferences</legend>
-                    <div id="notification-permission-status" style="margin-bottom: 0.5rem; font-size: var(--font-size-small); color: var(--text-muted);">
-                        Status: Checking...
-                    </div>
-                    <button type="button" id="enable-notifications-btn" class="button-like" style="width:auto; padding: 8px 12px;">Enable Reminders</button>
-                    <small>Allow notifications for end-of-day logging and backup reminders. You may need to grant permission in your browser.</small>
-                </fieldset>
 
                 <button type="submit" id="save-settings-btn" class="save-button" style="margin-top: 1.5rem;">Save Settings</button>
             </form>
 
             <div class="settings-data-management" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                 <h4>Data Management</h4>
-                <p><small>Download a backup or restore from a previous backup file (.json). Restoring overwrites current data.</small></p>
+                <p><small>Download a backup or restore from a previous backup file (.json). Restoring overwrites the current data.</small></p>
                 <div class="data-actions">
                     <button class="data-btn" id="settings-export-data-btn">⬇️ Download Backup</button>
                     <button class="data-btn" id="settings-import-data-trigger-btn">⬆️ Restore Backup</button>
@@ -490,7 +472,7 @@
                          <p>WellSpring uses 10 pillars for holistic wellbeing. Define what each means for *you*:</p>
                          <ul>
                              <li><strong>🧘‍♂️ Stillness:</strong> Meditation, quiet reflection, mindful breathing, prayer, or simply being present without distraction.</li>
-                             <li><strong>📋 Tidy:</strong> Organizing physical/digital space, cleaning, clearing clutter, planning your day or week.</li>
+                             <li><strong>📋 Tidy:</strong> Organising physical/digital space, cleaning, clearing clutter, planning your day or week.</li>
                              <li><strong>🤝 Connect:</strong> Meaningful interaction (in person, call, message), quality time with loved ones, community involvement.</li>
                              <li><strong>⛰️ Progress:</strong> Working towards personal/professional goals, learning a skill, problem-solving, completing a task.</li>
                              <li><strong>📚 Nourish:</strong> Reading, listening to podcasts, learning something new, engaging with enriching content or ideas, mindful eating.</li>
@@ -498,7 +480,7 @@
                              <li><strong>🎨 Create:</strong> Writing, drawing, music, coding, crafting, cooking, expressing creativity in any form.</li>
                              <li><strong>📵 Unplug:</strong> Disconnecting from screens/digital noise, spending time in nature, being present offline.</li>
                              <li><strong>📔 Reflect:</strong> Journaling, reviewing the day, considering feelings/actions, planning based on insights.</li>
-                             <li><strong>😌 Enjoy:</strong> Mindfully savoring positive moments, practicing gratitude, engaging in hobbies, relaxation.</li>
+                             <li><strong>😌 Enjoy:</strong> Mindfully savouring positive moments, practising gratitude, engaging in hobbies, relaxation.</li>
                          </ul>
                      </section>
                      <section class="guide-section">
@@ -508,8 +490,8 @@
                              <li><strong>Daily Log:</strong> Select pillars you engaged with and your mood. Use arrows or click the date to change days. (Both Modes)</li>
                              <li><strong>Save Day:</strong> Locks the day's entry, calculates XP/streak. Requires at least one pillar or mood logged. (Both Modes)</li>
                              <li><strong>XP & Levels:</strong> Earn XP for saved days (more for pillars/mood logged). Level up for a sense of progression. Reach Level 100 to Prestige! (Both Modes)</li>
-                             <li><strong>Calendar:</strong> View past logs visually. Click days to jump to their log. (Both Modes)</li>
-                             <li><strong>Analytics:</strong> See overall stats (days logged, streak, etc.) and visualize pillar balance. (Full Mode Only)</li>
+                             <li><strong>Calendar:</strong> View past logs visually. Click on the days to jump to their log. (Both Modes)</li>
+                             <li><strong>Analytics:</strong> See overall stats (days logged, streak, etc.) and visualise pillar balance. (Full Mode Only)</li>
                              <li><strong>Journey:</strong> Add notes/reflections. Achievements and Cycle completions appear automatically. Filter/sort your history. (Full Mode Only)</li>
                              <li><strong>Achievements:</strong> Unlock milestones for streaks, XP, pillar counts, etc. (Full Mode Only)</li>
                              <li><strong>Habit Planner:</strong> Create specific 'if/then' or 'habit stacking' plans to guide your actions. (Full Mode, Toggleable in Settings, currently in Beta)</li>
@@ -523,7 +505,7 @@
                              <li><strong>🏃 Move + 😌 Enjoy:</strong> Go for a mindful walk, focusing on your surroundings and appreciating the moment.</li>
                              <li><strong>🧘‍♂️ Stillness + 📔 Reflect:</strong> Follow a meditation session with journaling to capture insights.</li>
                              <li><strong>📋 Tidy + ⛰️ Progress:</strong> Clear your workspace before starting a focused work session on your goals.</li>
-                             <li><strong>🤝 Connect + 😌 Enjoy:</strong> Be fully present and savor the time spent with loved ones.</li>
+                             <li><strong>🤝 Connect + 😌 Enjoy:</strong> Be fully present and savour the time spent with loved ones.</li>
                              <li><strong>📚 Nourish + 🎨 Create:</strong> Use new knowledge or inspiration from reading/learning to fuel a creative project.</li>
                              <li><strong>📵 Unplug + 🤝 Connect:</strong> Put devices away during conversations for deeper connection.</li>
                          </ul>
@@ -547,50 +529,33 @@
                             <input type="file" id="file-input" accept=".json" style="display:none" aria-hidden="true" />
                         </div>
 
-                        <h4>Usage Analytics with Google Analytics 4 (GA4)</h4>
-                        <p>Your personal journal data is private and is stored only on your device. We do not have access to it.</p>p>
-                        <p>To help us understand how WellSpring is used and to improve its features and user experience, we use Google Analytics 4 (GA4). Here’s what this means for you:</p>
-                        <ul>
-                            <li><strong>Purpose of Analytics:</strong> GA4 helps us see which features are popular, how users navigate the app, identify areas for improvement, and understand general usage trends (e.g., how many people use the app, general geographic regions of users).</li>
-                            <li><strong>Aggregated & Anonymized Data:</strong> The information sent to GA4 is aggregated and helps us understand overall patterns. By default, GA4 is designed to not log or store full IP addresses.</li>
-                            <li><strong>What is NOT Tracked by GA4:</strong>
-                                <ul>
-                                    <li>The specific text content of your notes on the Journey timeline.</li>
-                                    <li>Personally identifiable details from your pillar logs or mood entries.</li>
-                                    <li>Your name, if you choose to provide it for personalization.</li>
-                                </ul>
-                            </li>
-                            <li><strong>What may Be Tracked by GA4 (General Usage Data):</strong>
-                                <p>All tracking is anonymous, and only helps us understand which features users are finding useful specifically. Users are anonymous, as is the content they input (either in the form of habits they have tracked or notes they write). You own all your data, and nothing is stored on an external server.</p>
-                                <ul>
-                                    <li>Events like which tabs are viewed, when a day is saved, when a note is added (but not the content), or when settings are changed.</li>
-                                    <li>General device characteristics (e.g., browser type, device category like desktop/mobile).</li>
-                                    <li>Approximate geographic location (derived from IP address, but IP addresses themselves are not stored by GA4).</li>
-                                    <li>App version and interaction with UI elements (e.g., button clicks for specific features).</li>
-                                </ul>
-                            </li>
-                            <li><strong>Google's Privacy Policy:</strong> For more information on how Google uses data when you use sites or apps that use Google Analytics, please visit <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">Google's Privacy & Terms</a>.</li>
-                        </ul>
-
-                        <h4>Notification Reminders</h4>
-                        <p>If you choose to enable them in Settings, WellSpring can provide occasional reminders using your browser's notification system. These are managed by your browser and our app's local logic:</p>
-                        <ul>
-                            <li><strong>Purpose:</strong> Reminders are intended to help you stay consistent with logging your wellbeing and to encourage periodic data backups.</li>
-                            <li><strong>Types of Reminders:</strong>
-                                <ul>
-                                    <li><strong>Missed Day Reminder:</strong> If you open the app and we detect that you may not have logged the previous day, you might receive a notification prompting you to log that day.</li>
-                                    <li><strong>Backup Reminder:</strong> Periodically (e.g., every 30 days, if you have a significant amount of data and haven't recently exported), you may receive a reminder to back up your data.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Local Triggering:</strong> These reminders are triggered by logic within the app when it's running or when it next starts. They do not rely on an external server sending push messages based on your personal data.</li>
-                            <li><strong>Control:</strong> You can enable or disable notification permissions at any time via the Settings modal or your browser's site settings.</li>
-                        </ul>
-                        <p style="margin-top: 1rem;">Our use of GA4 and client-side notifications is solely for the purpose of making WellSpring better and more helpful for everyone. We are committed to ensuring that your personal and sensitive tracking data remains private and on your device.</p>
+                    <h4>Usage Analytics with Google Analytics 4 (GA4)</h4>
+                    <p>To help us understand how WellSpring is used and to improve its features and user experience, we use Google Analytics 4 (GA4). Here’s what this means for you:</p>
+                    <ul>
+                        <li><strong>Purpose of Analytics:</strong> GA4 helps us see which features are popular, how users navigate the app, identify areas for improvement, and understand general usage trends (e.g., how many people use the app, general geographic regions of users).</li>
+                        <li><strong>Aggregated & Anonymized Data:</strong> The information sent to GA4 is aggregated and helps us understand overall patterns. By default, GA4 is designed to not log or store full IP addresses.</li>
+                        <li><strong>What is NOT Tracked by GA4:</strong>
+                            <ul>
+                                <li>The specific text content of your notes on the Journey timeline.</li>
+                                <li>Personally identifiable details from your pillar logs or mood entries.</li>
+                                <li>Your name, if you choose to provide it for personalisation.</li>
+                            </ul>
+                        </li>
+                        <li><strong>What MAY Be Tracked by GA4 (General Usage Data):</strong>
+                            <ul>
+                                <li>Events like which tabs are viewed, when a day is saved, when a note is added (but not the content), or when settings are changed.</li>
+                                <li>General device characteristics (e.g., browser type, device category like desktop/mobile).</li>
+                                <li>Approximate geographic location (derived from IP address, but IP addresses themselves are not stored by GA4).</li>
+                                <li>App version and interaction with UI elements (e.g., button clicks for specific features).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Google's Privacy Policy:</strong> For more information on how Google uses data when you use sites or apps that use Google Analytics, please visit <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">Google's Privacy & Terms</a>.</li>
+                    </ul>
                     </section>
                      <section class="guide-section">
                          <h3>💖 Support WellSpring</h3>
                           <p>WellSpring is developed and maintained with care, offered completely free for everyone. Your privacy is respected - all data stays on your device.</p>
-                          <p>If you find this app helpful and wish to support its continued development, you can "pay what you feel" it's worth. Contributions help cover development time and future improvements.</p>
+                          <p>If you find this app helpful and wish to support its continued development, you can pay what you feel it's worth. Contributions help cover development time and future improvements.</p>
                           <div class="data-actions">
                               <a href="https://ko-fi.com/martindouglashendry" target="_blank" rel="noopener noreferrer" class="data-btn support-btn" style="background-color: #FF5E5B; color: white;">☕ Buy Me a Coffee (Ko-fi)</a>
                           </div>
@@ -608,6 +573,5 @@
 
     </div>
     <script type="module" src="app.js"></script>
-
 </body>
 </html>
