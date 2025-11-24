@@ -2509,7 +2509,7 @@ h3 { font-size: var(--font-size-h3); }
 .guide-toggle { /* Button to toggle the guide */
     width: 100%;
     padding: 12px 20px;
-    background: var(--primary); /* Use primary color */
+    background: var(--secondary); /* Use primary color */
     color: white;
     border: none;
     font-size: 1em;
