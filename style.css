@@ -709,19 +709,20 @@ h3 { font-size: var(--font-size-h3); margin-top: var(--space-md); margin-bottom:
 }
 
 /* Active state styling */
+/* Active state styling */
 .pillar-card.active {
-  background: color-mix(in srgb, var(--pillar-color) 15%, var(--card-bg));
-  border-color: var(--pillar-color);
+  background: color-mix(in srgb, var(--pillar-color, var(--primary)) 15%, var(--card-bg));
+  border-color: var(--pillar-color, var(--primary));
 }
 .pillar-card.active::after {
-  background: var(--pillar-color);
+  background: var(--pillar-color, var(--primary));
   color: white;
   border-color: transparent;
   opacity: 1;
   transform: scale(1);
 }
 .pillar-card.active h3 {
-  color: var(--pillar-color);
+  color: var(--pillar-color, var(--primary));
 }
 
 /* --- Tooltip Styles (Pillar Cards) --- */
