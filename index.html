@@ -26,8 +26,9 @@
     <title>WellSpring - Daily Wellbeing Tracker</title>
     <link rel="stylesheet" href="style.css">
 
-    <link rel="icon" type="image/png" href="assets/favicon.png">
-    <link rel="apple-touch-icon" href="assets/favicon.png">
+    <!-- Fixed Favicon Casing -->
+    <link rel="icon" type="image/png" href="assets/favicon.PNG">
+    <link rel="apple-touch-icon" href="assets/favicon.PNG">
 </head>
 <body>
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
@@ -219,6 +220,8 @@
                     <button class="data-btn" id="settings-export-data-btn">⬇️ Download Backup</button>
                     <button class="data-btn" id="settings-import-data-trigger-btn">⬆️ Restore Backup</button>
                 </div>
+                <!-- ADDED: Reset Data Button -->
+                <button class="data-btn" id="settings-reset-data-btn" style="background-color: var(--accent); margin-top: 10px; width: 100%;">⚠️ Reset All Data</button>
             </div>
         </div>
     </div>
@@ -553,6 +556,7 @@
                     </ul>
                     </section>
 
+                    <!-- ADDED: Install App Guide -->
                     <section class="guide-section">
                          <h3>📱 Install as an App</h3>
                          <p>For the best experience, you can add WellSpring to your home screen to use it like a native app (fullscreen, offline support).</p>
@@ -576,6 +580,12 @@
                           <p>WellSpring 🌱: Cultivating Daily Wellbeing. Version 2.0 [April 25, 2025]</p>
                           <p>Designed by Dr Martin Douglas Hendry.</p>
                           <p>A simple, private tool to help you build awareness and consistency in your wellbeing journey.</p>
+                     </section>
+                     <!-- ADDED: Health Disclaimer -->
+                     <section class="guide-section">
+                         <h3>🚑 Health Disclaimer</h3>
+                         <p>WellSpring is a self-tracking tool designed for general wellbeing awareness and habit building. It is not a medical device and does not provide medical advice, diagnosis, or treatment.</p>
+                         <p>The information and pillars in this app are based on general wellness principles. If you are experiencing mental or physical health difficulties, please consult with a qualified healthcare professional.</p>
                      </section>
                  </div>
              </div>
