@@ -2,17 +2,19 @@
 
 /**
  * Utility functions for the WellSpring application.
- * *** MODIFIED: Rebalanced XP constants for leveling and prestige. ***
+ * *** MODIFIED: XP constants tuned for ~3 months to reach Level 100. ***
  */
 
 // Import LEVEL_NAMES from constants
 import { LEVEL_NAMES } from './constants.js';
 
 // --- Constants (Level Calculation) ---
-// *** MODIFIED VALUES FOR REBALANCING ***
-const BASE_XP_PER_LEVEL = 2; // XP needed for level 1 (Was 1000) - Lowered significantly
-const LEVEL_SCALING_FACTOR = 1.05; // How much XP needed increases per level (Was 1.1) - Reduced steepness
-const PRESTIGE_XP_MULTIPLIER = 1.1; // How much XP needed increases per prestige rank (Was 1.5) - Reduced cycle difficulty increase
+// *** MODIFIED VALUES FOR 3-MONTH PROGRESSION CURVE ***
+// Target: ~3500 Total XP for Level 100.
+// Avg User (~35-40 XP/day) will reach Level 100 in approx 90-100 days.
+const BASE_XP_PER_LEVEL = 15; // XP needed for first level (Easy start)
+const LEVEL_SCALING_FACTOR = 1.015; // 1.5% increase per level (Smooth curve)
+const PRESTIGE_XP_MULTIPLIER = 1.25; // Each cycle requires 25% more XP
 // *** END MODIFIED VALUES ***
 
 // --- Date Formatting ---
