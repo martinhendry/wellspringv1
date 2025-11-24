@@ -2,7 +2,7 @@
 
 // Define a unique cache name, including a version number.
 // Increment the version number when you update the cached files.
-const CACHE_NAME = 'wellspring-cache-v3'; // Updated to v3 to fix pillar color stale cache issue
+const CACHE_NAME = 'wellspring-cache-v4'; // Updated to v4 for icon fixes in achievements.js
 
 // List of essential files to cache for the application shell.
 const urlsToCache = [
