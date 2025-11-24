@@ -2,7 +2,7 @@
 
 // Define a unique cache name, including a version number.
 // Increment the version number when you update the cached files.
-const CACHE_NAME = 'wellspring-cache-v1'; // Keep this consistent or update if assets change significantly
+const CACHE_NAME = 'wellspring-cache-v3'; // Updated to v3 to fix pillar color stale cache issue
 
 // List of essential files to cache for the application shell.
 const urlsToCache = [
@@ -33,12 +33,10 @@ const urlsToCache = [
     'ui/settingsUI.js',
     // Assets
     'assets/wellspringlogo.png',
-    'assets/favicon.png',
+    'assets/favicon.PNG', // Ensure this matches your actual file casing
     // External Libraries
     'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
-    // Consider caching Font Awesome webfonts if offline access is critical
-    // e.g., 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-solid-900.woff2',
 ];
 
 // --- Event Listener: Install ---
@@ -90,22 +88,10 @@ self.addEventListener('fetch', event => {
                 }
                 return fetch(event.request) // Fetch from network if not in cache
                     .then(networkResponse => {
-                        // Optional: Cache dynamically fetched resources if needed
-                        // Example: Caching images (ensure it's appropriate for your app)
-                        // if (networkResponse.ok && networkResponse.type === 'basic' && event.request.url.match(/\.(png|jpg|jpeg|gif|svg|webp)$/i)) {
-                        //     const responseToCache = networkResponse.clone();
-                        //     caches.open(CACHE_NAME).then(cache => {
-                        //         cache.put(event.request, responseToCache);
-                        //     });
-                        // }
                         return networkResponse;
                     })
                     .catch(error => {
                         console.warn(`[Service Worker] Network fetch failed for ${event.request.url}:`, error);
-                        // Optional: Return a custom offline fallback page for navigation requests
-                        // if (event.request.mode === 'navigate') {
-                        //     return caches.match('/offline.html'); // You'd need to cache an offline.html
-                        // }
                     });
             })
     );
@@ -126,8 +112,8 @@ self.addEventListener('push', event => {
     let title = 'WellSpring Reminder';
     let options = {
         body: 'You have a new message from WellSpring!',
-        icon: 'assets/favicon.png', // Path to a small icon
-        badge: 'assets/favicon.png', // Path to a badge icon (often monochrome)
+        icon: 'assets/favicon.PNG', // Fixed icon path case
+        badge: 'assets/favicon.PNG', // Fixed badge path case
         vibrate: [100, 50, 100], // Vibration pattern
         data: { // Custom data to pass to notificationclick handler
             url: '/', // URL to open on click
