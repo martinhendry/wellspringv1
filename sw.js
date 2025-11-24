@@ -2,7 +2,7 @@
 
 // Define a unique cache name, including a version number.
 // Increment the version number when you update the cached files.
-const CACHE_NAME = 'wellspring-cache-v4'; // Updated to v4 for icon fixes in achievements.js
+const CACHE_NAME = 'wellspring-cache-v6'; // Updated to v6 for reset data functionality
 
 // List of essential files to cache for the application shell.
 const urlsToCache = [
