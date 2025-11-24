@@ -15,7 +15,8 @@ import {
     setSimpleModePillarCount, setSimpleModePillars, setShowPlanner,
     setLevel100ToastShown,
     updateNoteInTimeline, deleteNoteFromTimeline,
-    setLastBackupReminderShown
+    setLastBackupReminderShown,
+    resetState
 } from './state.js';
 import { checkAchievements } from './achievementlogic.js';
 import { exportData, setupImportListener } from './datamanagement.js';
@@ -476,6 +477,24 @@ function handleTouchEnd(event) {
     }
     touchStartX = 0; touchStartY = 0; touchEndX = 0; touchEndY = 0;
 }
+function handleResetData() {
+    handleInteractionForAudio();
+    if (confirm("⚠️ DANGER ZONE ⚠️\n\nAre you sure you want to delete ALL your WellSpring data? This includes your daily logs, timeline, and achievements.\n\nThis cannot be undone.")) {
+        if (confirm("Last chance: This will wipe everything and reset the app to the beginning. Are you absolutely sure?")) {
+            if (resetState()) {
+                trackGAEvent('data_reset_confirmed');
+                showToast("All data deleted. Restarting app...", "success");
+                playSound('delete', 'C2', '4n'); // Low, serious sound
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showToast("Error resetting data.", "error");
+                playSound('error');
+            }
+        }
+    }
+}
 function appShowSettingsModal() { handleInteractionForAudio(); uiShowSettingsModal(); updateNotificationPermissionStatusDisplay(); trackGAEvent('settings_opened'); playSound('click', 'B4', '16n'); }
 
 function setupEventListeners() {
@@ -679,6 +698,7 @@ function setupEventListeners() {
     document.getElementById('settings-change-pillars-btn')?.addEventListener('click', () => { handleInteractionForAudio(); enableSimpleModeEditing(); trackGAEvent('settings_change_pillars_clicked'); playSound('click', 'E4', '16n'); });
     document.getElementById('settings-export-data-btn')?.addEventListener('click', () => { handleInteractionForAudio(); exportData(); trackGAEvent('data_exported_from_settings'); });
     document.getElementById('settings-import-data-trigger-btn')?.addEventListener('click', () => { handleInteractionForAudio(); document.getElementById('file-input')?.click(); trackGAEvent('data_import_triggered_from_settings'); playSound('click', 'D5', '16n'); hideSettingsModal(); });
+    document.getElementById('settings-reset-data-btn')?.addEventListener('click', handleResetData);
     document.getElementById('enable-notifications-btn')?.addEventListener('click', requestNotificationPermission);
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
