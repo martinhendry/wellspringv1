@@ -2,8 +2,7 @@
 
 /**
  * Main application logic for WellSpring.
- * ... (other comments)
- * *** MODIFIED: More robust deferred UI initialization for all tabs. ***
+ * *** MODIFIED: Added cross-tab synchronization logic via storage event listener. ***
  */
 
 // --- Core Modules ---
@@ -16,7 +15,8 @@ import {
     setLevel100ToastShown,
     updateNoteInTimeline, deleteNoteFromTimeline,
     setLastBackupReminderShown,
-    resetState
+    resetState,
+    reloadState // Import the reload function
 } from './state.js';
 import { checkAchievements } from './achievementlogic.js';
 import { exportData, setupImportListener } from './datamanagement.js';
@@ -48,15 +48,15 @@ const DAYS_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
 // --- State ---
 let saveTimeoutId = null;
-let currentAnalyticsView = 'stats'; // Default analytics view
+let currentAnalyticsView = 'stats';
 let touchStartX = 0;
 let touchStartY = 0;
 let touchEndX = 0;
 let touchEndY = 0;
 let journeyTabInitialized = false;
 let achievementsTabInitialized = false;
-let calendarTabInitialized = false; // Added for calendar
-let analyticsTabInitialized = false; // Added for analytics
+let calendarTabInitialized = false;
+let analyticsTabInitialized = false;
 
 
 // --- GA4 Event Tracking Helper ---
@@ -192,16 +192,15 @@ function init() {
 
     const initialStateData = getState();
     updateUIVisibilityForMode(initialStateData.userMode);
-    updatePlannerVisibility(initialStateData.showPlanner); // Planner visibility is handled by its toggle
+    updatePlannerVisibility(initialStateData.showPlanner); 
     resetDateDisplay();
 
-    showTab('daily'); // Show initial tab
+    showTab('daily'); 
     trackGAEvent('view_tab', { tab_id: 'daily' });
-    requestAnimationFrame(() => { // Defer initial daily log refresh
-        refreshDailyLogUI();
-    });
+    requestAnimationFrame(() => { refreshDailyLogUI(); });
 
     setupEventListeners();
+    setupStorageListener(); // Set up cross-tab sync
     updateNotificationPermissionStatusDisplay();
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -210,7 +209,7 @@ function init() {
         updateCurrentDate(dateParam);
         resetDateDisplay();
         requestAnimationFrame(() => { refreshDailyLogUI(); });
-        showTab('daily'); // Ensure daily tab is active if date param is used
+        showTab('daily');
     }
 
     if (!initialStateData.isOnboardingComplete) {
@@ -257,8 +256,34 @@ function handleStateChangeForSave(e) {
     }, SAVE_DELAY);
 }
 
+// --- Storage Listener for Cross-Tab Sync ---
+function setupStorageListener() {
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'wellspringAppState_v2') {
+            // Reload state from storage
+            if (reloadState()) {
+                // Refresh UI components to reflect new state
+                requestAnimationFrame(() => {
+                    resetDateDisplay();
+                    refreshDailyLogUI();
+                    if (document.getElementById('calendar-view')?.style.display !== 'none') {
+                        handleShowCalendarTab(); // Refresh calendar if visible
+                    }
+                    if (document.getElementById('analytics-container')?.style.display === 'block') {
+                        switchAnalyticsView(currentAnalyticsView); // Refresh analytics if visible
+                    }
+                    renderTimeline(); // Refresh timeline
+                    renderSavedHabitPlans(); // Refresh plans
+                    renderAchievementBoard(); // Refresh achievements
+                });
+                // Optional: Play a subtle sound to indicate sync? 
+                // playSound('toast', 'C6', '32n'); 
+            }
+        }
+    });
+}
+
 // --- Event Handlers ---
-// ... (Most event handlers remain the same, only tab switching and related init calls are modified)
 function handleDateChangeInput(newDateString) {
     handleInteractionForAudio();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateString)) { showToast("Invalid date selected.", "error"); resetDateDisplay(); return; }
@@ -446,9 +471,8 @@ function handleTouchEnd(event) {
         if (nextTabIndex !== -1 && nextTabIndex !== currentTabIndex) {
             const nextTabButton = tabButtons[nextTabIndex]; const nextTabId = nextTabButton?.dataset.tab;
             if (nextTabId) {
-                // --- START MODIFICATION: Defer UI updates for swiped tabs ---
                 if (nextTabId === 'calendar') {
-                    handleShowCalendarTab(); // This function already handles its rendering logic
+                    handleShowCalendarTab(); 
                 } else if (nextTabId === 'journey') {
                     showTab(nextTabId);
                     requestAnimationFrame(() => {
@@ -463,14 +487,13 @@ function handleTouchEnd(event) {
                         renderAchievementBoard();
                     });
                     trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });
-                } else { // For 'daily' or any other tabs
+                } else { 
                     showTab(nextTabId);
                     if (nextTabId === 'daily') {
                         requestAnimationFrame(() => { refreshDailyLogUI(); });
                     }
                     trackGAEvent('view_tab', { tab_id: nextTabId, source: 'swipe' });
                 }
-                // --- END MODIFICATION ---
                 playSound('navigate', deltaX < 0 ? 'E5' : 'C5', '16n');
             }
         }
@@ -484,7 +507,7 @@ function handleResetData() {
             if (resetState()) {
                 trackGAEvent('data_reset_confirmed');
                 showToast("All data deleted. Restarting app...", "success");
-                playSound('delete', 'C2', '4n'); // Low, serious sound
+                playSound('delete', 'C2', '4n'); 
                 setTimeout(() => {
                     location.reload();
                 }, 2000);
@@ -523,10 +546,10 @@ function setupEventListeners() {
             const tabId = e.target.dataset.tab;
             if (tabId) {
                 if (tabId === 'calendar') {
-                    handleShowCalendarTab(); // This calls showTab and then renderCalendar (which should be fine)
+                    handleShowCalendarTab(); 
                 } else if (tabId === 'journey') {
-                    showTab(tabId); // Show tab first
-                    requestAnimationFrame(() => { // Defer UI updates
+                    showTab(tabId); 
+                    requestAnimationFrame(() => { 
                         if (!journeyTabInitialized) {
                             setupAutoResizeTextarea();
                             journeyTabInitialized = true;
@@ -537,15 +560,15 @@ function setupEventListeners() {
                     });
                     trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
                 } else if (tabId === 'achievements') {
-                    showTab(tabId); // Show tab first
-                    requestAnimationFrame(() => { // Defer UI updates
+                    showTab(tabId); 
+                    requestAnimationFrame(() => { 
                         if (!achievementsTabInitialized) {
                             achievementsTabInitialized = true;
                         }
                         renderAchievementBoard();
                     });
                     trackGAEvent('view_tab', { tab_id: tabId, source: 'click' });
-                } else { // For 'daily' or any other tabs
+                } else { 
                     showTab(tabId);
                     if (tabId === 'daily') {
                         requestAnimationFrame(() => { refreshDailyLogUI(); });
@@ -587,7 +610,7 @@ function setupEventListeners() {
     document.getElementById('next-month-btn')?.addEventListener('click', () => {handleMonthChange(1); trackGAEvent('calendar_month_changed', { direction: 'next'}); });
     document.getElementById('view-analytics-btn')?.addEventListener('click', () => {
         handleInteractionForAudio();
-        toggleAnalyticsVisibility(); // This function in analyticsUI.js should handle its own rendering logic
+        toggleAnalyticsVisibility(); 
         trackGAEvent('analytics_visibility_toggled', { visible: document.getElementById("analytics-container").style.display === "block" });
         playSound('click', 'B4', '16n');
     });
@@ -596,7 +619,6 @@ function setupEventListeners() {
             const view = e.target.dataset.view;
             if (view && view !== currentAnalyticsView) {
                 handleInteractionForAudio();
-                // switchAnalyticsView in analyticsUI.js handles rendering
                 requestAnimationFrame(() => switchAnalyticsView(view));
                 trackGAEvent('analytics_view_switched', { view_id: view });
                 playSound('click', 'G4', '16n');
@@ -658,7 +680,7 @@ function setupEventListeners() {
         handleInteractionForAudio();
         const isExpanding = this.getAttribute('aria-expanded') === 'false';
         toggleCollapsibleSection(this, 'habit-planner-content', () => {
-            if (isExpanding) { // Only init planner UI if expanding and not already initialized
+            if (isExpanding) { 
                 populatePillarSelect();
                 resetHabitPlanForm();
                 renderSavedHabitPlans();
@@ -728,11 +750,10 @@ function setupEventListeners() {
 
 // --- Calendar Specific Tab Handler ---
 function handleShowCalendarTab() {
-    showTab('calendar'); // Show tab first
-    requestAnimationFrame(() => { // Defer rendering
-        toggleAnalyticsVisibility(false); // Ensure analytics is hidden
+    showTab('calendar'); 
+    requestAnimationFrame(() => { 
+        toggleAnalyticsVisibility(false); 
         if (!calendarTabInitialized) {
-            // Any one-time calendar setup can go here
             calendarTabInitialized = true;
         }
         const state = getState();
@@ -746,7 +767,7 @@ function handleCalendarDayClick(dateStr) {
     handleInteractionForAudio();
     handleDateChangeInput(dateStr);
     showTab('daily');
-    requestAnimationFrame(() => { refreshDailyLogUI(); }); // Ensure daily log refreshes
+    requestAnimationFrame(() => { refreshDailyLogUI(); }); 
     trackGAEvent('view_tab', { tab_id: 'daily', source: 'calendar_day_click' });
 }
 
@@ -761,7 +782,7 @@ function handleMonthChange(delta) {
     stateRef.currentMonth = newMonth;
     stateRef.currentYear = newYear;
     document.dispatchEvent(new CustomEvent('stateChanged', { detail: { action: 'changeMonth' } }));
-    requestAnimationFrame(() => { // Defer rendering
+    requestAnimationFrame(() => { 
         const firstUsage = findFirstUsageDate(getState());
         renderCalendar(newMonth, newYear, firstUsage, handleCalendarDayClick);
     });
