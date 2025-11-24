@@ -3,7 +3,7 @@
 /**
  * Manages the application state for WellSpring.
  * ... (other comments)
- * *** MODIFIED: Added state properties for notification reminder tracking. ***
+ * *** MODIFIED: Added resetState function. ***
  */
 
 // --- Imports ---
@@ -173,6 +173,23 @@ export function saveState(action = 'unknown') {
         document.dispatchEvent(new CustomEvent('stateChanged', { detail: { action: action } }));
     } catch (error) {
         console.error("[State] Error saving state to localStorage:", error);
+    }
+}
+
+/**
+ * Completely resets the application state by removing localStorage keys.
+ * Returns true if successful.
+ */
+export function resetState() {
+    try {
+        console.log("[State] Resetting application state...");
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        localStorage.removeItem('wellnessTrackerVisited'); // Reset onboarding/welcome flag
+        // We purposely keep 'theme' so the user isn't blinded by a sudden switch
+        return true;
+    } catch (error) {
+        console.error("[State] Error resetting state:", error);
+        return false;
     }
 }
 
