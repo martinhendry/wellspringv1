@@ -2,7 +2,7 @@
 
 // Define a unique cache name, including a version number.
 // Increment the version number when you update the cached files.
-const CACHE_NAME = 'wellspring-cache-v7'; // Updated to v7 for XP logic and sync fixes
+const CACHE_NAME = 'wellspring-cache-v8'; // Updated to v8 for balanced XP curve
 
 // List of essential files to cache for the application shell.
 const urlsToCache = [
