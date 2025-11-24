@@ -199,12 +199,12 @@ export const ALL_ACHIEVEMENTS = {
     'pillar_total_progress_25': {
         id: 'pillar_total_progress_25', name: "Goal Getter x25", description: "Log 'Progress' 25 times.",
         flavor: "'Progress is impossible without change...' - George Bernard Shaw.\nTip: Reward yourself for reaching mini-milestones.\nTwenty-five times you've pushed forward, [Name]. Making tangible strides!",
-        icon: 'fa-solid fa-person-digging', criteria: { type: 'specificPillarCount', pillarId: 'progress', value: 25 }, unlocked: false, date: null
+        icon: 'fa-solid fa-road', criteria: { type: 'specificPillarCount', pillarId: 'progress', value: 25 }, unlocked: false, date: null
     },
     'pillar_total_progress_50': {
         id: 'pillar_total_progress_50', name: "Goal Getter x50", description: "Log 'Progress' 50 times.",
         flavor: "'Setting goals is the first step in turning the invisible into the visible.' - Tony Robbins.\nTip: Review your goal – is it still relevant? Adjust if needed.\nFifty times focused on progress! Your dedication shines, [Name].",
-        icon: 'fa-solid fa-mountain-sun', criteria: { type: 'specificPillarCount', pillarId: 'progress', value: 50 }, unlocked: false, date: null
+        icon: 'fa-solid fa-flag', criteria: { type: 'specificPillarCount', pillarId: 'progress', value: 50 }, unlocked: false, date: null
     },
     'pillar_total_progress_100': {
         id: 'pillar_total_progress_100', name: "Goal Getter x100", description: "Log 'Progress' 100 times.",
@@ -285,7 +285,7 @@ export const ALL_ACHIEVEMENTS = {
     'pillar_total_unplug_25': {
         id: 'pillar_total_unplug_25', name: "Digital Detox x25", description: "Log 'Unplug' 25 times.",
         flavor: "'The more relaxed you are, the better you are at everything.' - Bill Murray.\nTip: Designate 'screen-free' times or zones.\nTwenty-five moments of digital peace, [Name]. Making space for offline presence.",
-        icon: 'fa-solid fa-plug-circle-xmark', criteria: { type: 'specificPillarCount', pillarId: 'unplug', value: 25 }, unlocked: false, date: null
+        icon: 'fa-solid fa-plane', criteria: { type: 'specificPillarCount', pillarId: 'unplug', value: 25 }, unlocked: false, date: null
     },
     'pillar_total_unplug_50': {
         id: 'pillar_total_unplug_50', name: "Digital Detox x50", description: "Log 'Unplug' 50 times.",
